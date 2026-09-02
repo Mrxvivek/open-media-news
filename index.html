@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>OPEN MEDIA — Your Window to Global Technology, Business & Cybersecurity Intelligence</title>
+    <meta name="description" content="OPEN MEDIA delivers worldwide technology, business, AI, and cybersecurity intelligence through editorial journalism and expert analysis.">
+    <meta property="og:title" content="OPEN MEDIA">
+    <meta property="og:description" content="Your Window to Global Technology, Business, and Cybersecurity Intelligence.">
+    <meta property="og:type" content="website">
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+    <!-- Top Utility Bar -->
+    <div class="top-bar">
+        <div class="container top-bar-inner">
+            <div class="top-bar-left">
+                <span class="live-indicator"><span class="pulse-dot"></span><i data-lucide="radio-tower"></i><span class="live-label">LIVE UPDATES</span><span class="live-update-divider"></span><span id="live-update-message">Monitoring the global desk</span></span>
+                <span id="current-date"></span>
+                <span class="edition-tag">Global Edition</span>
+            </div>
+            <div class="top-bar-right">
+                <span class="market-ticker-item">NASDAQ: <b class="text-emerald">+1.2%</b></span>
+                <span class="market-ticker-item">CYBER THREAT LEVEL: <b class="text-danger">ELEVATED</b></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="main-header" id="main-header">
+        <div class="container header-inner">
+            <a href="#home" class="brand-logo" onclick="app.navigateTo('home')">
+                <div class="logo-icon"><i data-lucide="globe"></i></div>
+                <div class="logo-text">OPEN <span>MEDIA</span></div>
+            </a>
+
+            <nav class="desktop-nav" aria-label="Primary">
+                <a href="#home" class="nav-link" data-page="home">Home</a>
+                <a href="#foryou" id="nav-foryou" class="nav-link reader-only-nav" data-page="foryou" hidden>For You</a>
+                <a href="#business" class="nav-link" data-page="business">Business</a>
+                <a href="#tech" class="nav-link" data-page="tech">IT</a>
+                <a href="#cyber" class="nav-link" data-page="cyber">Cyber Security</a>
+                <a href="#ai" class="nav-link" data-page="ai">AI</a>
+                <a href="#publish" id="nav-publish" class="nav-link publisher-only-nav" data-page="publish" hidden>Publish</a>
+                <a href="#admin" id="nav-admin" class="nav-link admin-only-nav" data-page="admin" hidden>Admin Panel</a>
+            </nav>
+
+            <div class="header-actions">
+                <button class="btn btn-outline btn-sm auth-guest" onclick="app.openAuthModal('login')">Login</button>
+                <button class="btn btn-primary btn-sm auth-guest" onclick="app.openAuthModal('register')">Register</button>
+
+                <button class="icon-btn" id="search-trigger-btn" title="Search" aria-label="Open search" onclick="app.openSearch()">
+                    <i data-lucide="search"></i>
+                </button>
+                <button class="icon-btn" id="ai-teller-btn" title="AI News Teller" aria-label="Open AI News Teller" onclick="app.toggleAITeller()">
+                    <i data-lucide="sparkles"></i>
+                </button>
+                <button class="icon-btn badge-btn" id="notif-trigger-btn" title="Notifications" aria-label="Open notifications" onclick="app.openNotifications()">
+                    <i data-lucide="bell"></i>
+                    <span class="badge-count" id="notif-count">3</span>
+                </button>
+                <div class="profile-dropdown-wrapper auth-user" hidden>
+                    <button class="profile-avatar-btn" onclick="app.toggleProfileMenu()" aria-label="Open profile menu">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="User avatar">
+                    </button>
+                    <div class="profile-menu" id="profile-menu">
+                        <div class="menu-header">
+                            <p class="user-name" id="menu-user-name">Account</p>
+                            <p class="user-role" id="menu-user-role">Reader</p>
+                        </div>
+                        <hr>
+                        <a href="#foryou" onclick="app.navigateTo('foryou'); app.toggleProfileMenu()"><i data-lucide="bookmark"></i> My Saved Articles</a>
+                        <a href="#foryou" onclick="app.navigateTo('foryou'); app.toggleProfileMenu()"><i data-lucide="users"></i> Following</a>
+                        <a href="#publish" class="publisher-only-menu" hidden onclick="app.navigateTo('publish'); app.toggleProfileMenu()"><i data-lucide="layout-dashboard"></i> Publisher Dashboard</a>
+                        <a href="#admin" class="admin-only-menu" hidden onclick="app.navigateTo('admin'); app.toggleProfileMenu()"><i data-lucide="shield-check"></i> Admin Panel</a>
+                        <hr>
+                        <a href="javascript:void(0)" onclick="app.signOut()"><i data-lucide="log-out"></i> Sign Out</a>
+                    </div>
+                </div>
+                <button class="icon-btn mobile-menu-btn" onclick="app.toggleMobileNav()" aria-label="Open menu">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Drawer -->
+    <div class="mobile-drawer-overlay" id="mobile-drawer-overlay" onclick="app.toggleMobileNav()"></div>
+    <div class="mobile-drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+        <div class="drawer-header">
+            <div class="logo-text">OPEN <span>MEDIA</span></div>
+            <button class="icon-btn" onclick="app.toggleMobileNav()" aria-label="Close menu"><i data-lucide="x"></i></button>
+        </div>
+        <nav class="mobile-nav-links" aria-label="Mobile primary">
+            <a href="#home" class="mobile-nav-link" data-page="home" onclick="app.navigateTo('home'); app.toggleMobileNav();">Home</a>
+            <a href="#foryou" class="mobile-nav-link reader-only-nav" data-page="foryou" hidden onclick="app.navigateTo('foryou'); app.toggleMobileNav();">For You</a>
+            <a href="#business" class="mobile-nav-link" data-page="business" onclick="app.navigateTo('business'); app.toggleMobileNav();">Business</a>
+            <a href="#tech" class="mobile-nav-link" data-page="tech" onclick="app.navigateTo('tech'); app.toggleMobileNav();">IT</a>
+            <a href="#cyber" class="mobile-nav-link" data-page="cyber" onclick="app.navigateTo('cyber'); app.toggleMobileNav();">Cyber Security</a>
+            <a href="#ai" class="mobile-nav-link" data-page="ai" onclick="app.navigateTo('ai'); app.toggleMobileNav();">AI</a>
+            <a href="#publish" class="mobile-nav-link publisher-only-nav" data-page="publish" hidden onclick="app.navigateTo('publish'); app.toggleMobileNav();">Publish</a>
+            <a href="#admin" class="mobile-nav-link admin-only-nav" data-page="admin" hidden onclick="app.navigateTo('admin'); app.toggleMobileNav();">Admin Panel</a>
+        </nav>
+    </div>
+
+    <!-- Breaking News Ticker -->
+    <div class="ticker-wrapper">
+        <div class="container ticker-inner">
+            <div class="ticker-label"><i data-lucide="zap"></i> BREAKING</div>
+            <div class="ticker-content" id="ticker-content"></div>
+        </div>
+    </div>
+
+    <!-- MAIN PAGE CONTAINER (SPA Page Views) -->
+    <main id="app-viewport">
+
+        <!-- ================= HOME PAGE ================= -->
+        <section id="page-home" class="page-view">
+            <div class="container">
+
+                <!-- Hero Magazine Experience -->
+                <div class="hero-magazine-wrapper">
+                    <div class="hero-main-card" id="hero-main-card"></div>
+                    <div class="magazine-flip-card" id="magazine-flip-card"></div>
+                </div>
+
+                <div class="editor-picks-strip" id="editor-picks-strip"></div>
+
+                <!-- Trending News -->
+                <section class="section-block">
+                    <div class="section-header">
+                        <h2><i data-lucide="trending-up" class="text-cyan"></i> Trending Now</h2>
+                    </div>
+                    <div class="horizontal-scroll-container" id="trending-container"></div>
+                </section>
+
+                <!-- Upcoming Webinars & Events -->
+                <section class="section-block">
+                    <div class="section-header">
+                        <h2><i data-lucide="calendar" class="text-purple"></i> Upcoming Webinars &amp; Events</h2>
+                    </div>
+                    <div class="horizontal-scroll-container" id="events-container"></div>
+                </section>
+
+                
+
+            </div>
+        </section>
+
+        <!-- ================= FOR YOU PAGE ================= -->
+        <section id="page-foryou" class="page-view">
+            <div class="container">
+                <div class="page-header-title">
+                    <h1>Personalized News Intelligence</h1>
+                    <p>Curated analysis based on your saved items, followed authors, and technology domains.</p>
+                </div>
+
+                <div class="three-column-layout">
+                    <aside class="col-sidebar-left">
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="bookmark"></i> My Library</h3>
+                            <ul class="library-nav" id="library-nav">
+                                <li><a href="javascript:void(0)" class="active" data-lib="saved" onclick="app.filterLibrary('saved')">Saved Articles (<span id="saved-count">0</span>)</a></li>
+                                <li><a href="javascript:void(0)" data-lib="history" onclick="app.filterLibrary('history')">Reading History</a></li>
+                            </ul>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="users"></i> Followed Authors</h3>
+                            <div class="author-follow-list" id="followed-authors-list"></div>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="trending-up"></i> Trending Authors</h3>
+                            <div class="author-follow-list" id="trending-authors-list"></div>
+                        </div>
+                    </aside>
+
+                    <main class="col-main-feed" id="foryou-feed"></main>
+
+                    <aside class="col-sidebar-right">
+                        <div id="foryou-right-ad-slot"></div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= IT PAGE ================= -->
+        <section id="page-tech" class="page-view">
+            <div class="container">
+                <div class="page-header-title">
+                    <h1>IT &amp; Innovation</h1>
+                    <p>Artificial Intelligence, Cloud Computing, Semiconductors, and Enterprise Tech.</p>
+                </div>
+
+                <div class="filter-chip-bar" id="tech-filters">
+                    <button class="chip active" onclick="app.filterCategory('tech', 'all', this)">All Tech</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'Artificial Intelligence', this)">Artificial Intelligence</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'Cloud Computing', this)">Cloud Computing</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'Semiconductors', this)">Semiconductors</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'Enterprise IT', this)">Enterprise IT</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'Startups', this)">Startups</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'SaaS', this)">SaaS</button>
+                    <button class="chip" onclick="app.filterCategory('tech', 'FinTech', this)">FinTech</button>
+                </div>
+
+                <div class="three-column-layout">
+                    <aside class="col-sidebar-left">
+                        <div class="panel-box">
+                            <h3 class="panel-title">Technology Domains</h3>
+                            <div class="domain-tree" id="tech-domain-tree"></div>
+                        </div>
+                        <div id="tech-ad-slot"></div>
+                    </aside>
+
+                    <main class="col-main-feed" id="tech-feed"></main>
+
+                    <aside class="col-sidebar-right">
+                        <div id="tech-right-ad-slot"></div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= BUSINESS PAGE ================= -->
+        <section id="page-business" class="page-view">
+            <div class="container">
+                <div class="page-header-title">
+                    <h1>Business &amp; Markets</h1>
+                    <p>Global markets, M&amp;A activity, earnings reports, and executive strategy.</p>
+                </div>
+
+                <div class="filter-chip-bar" id="business-filters">
+                    <button class="chip active" onclick="app.filterCategory('business', 'all', this)">All Business</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'Companies', this)">Companies</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'Earnings', this)">Earnings</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'M&A', this)">M&amp;A &amp; Deals</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'Strategy', this)">Strategy</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'Leadership', this)">Leadership</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'Expansion', this)">Expansion</button>
+                    <button class="chip" onclick="app.filterCategory('business', 'Partnerships', this)">Partnerships</button>
+                </div>
+
+                <div class="three-column-layout">
+                    <aside class="col-sidebar-left">
+                        <div class="panel-box">
+                            <h3 class="panel-title">Market Indicators</h3>
+                            <div class="market-widget">
+                                <div class="market-row"><span>S&amp;P 500</span> <span class="text-emerald">+0.84%</span></div>
+                                <div class="market-row"><span>NASDAQ</span> <span class="text-emerald">+1.22%</span></div>
+                                <div class="market-row"><span>FTSE 100</span> <span class="text-red">-0.15%</span></div>
+                                <div class="market-row"><span>NIFTY 50</span> <span class="text-emerald">+0.45%</span></div>
+                            </div>
+                            <p class="sample-tag" style="margin-top:12px; display:block;">Sample interface data, not live market data.</p>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title">Business Domains</h3>
+                            <div class="domain-tree" id="business-domain-tree"></div>
+                        </div>
+                        <div id="business-ad-slot"></div>
+                    </aside>
+
+                    <main class="col-main-feed" id="business-feed"></main>
+
+                    <aside class="col-sidebar-right">
+                        <div id="business-right-ad-slot"></div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CYBER SECURITY PAGE ================= -->
+        <section id="page-cyber" class="page-view">
+            <div class="container">
+                <div class="page-header-title">
+                    <h1>Cyber Security Intelligence</h1>
+                    <p>Real-time threat tracking, zero-day vulnerabilities, ransomware alerts, and defense strategies.</p>
+                </div>
+
+                <div class="filter-chip-bar" id="cyber-filters">
+                    <button class="chip active" onclick="app.filterCategory('cyber', 'all', this)">All Intelligence</button>
+                    <button class="chip" onclick="app.filterCategory('cyber', 'Critical', this)">Critical Alerts</button>
+                    <button class="chip" onclick="app.filterCategory('cyber', 'Global Attacks', this)">Global Attacks</button>
+                    <button class="chip" onclick="app.filterCategory('cyber', 'Zero-Day', this)">Zero-Day Radar</button>
+                    <button class="chip" onclick="app.filterCategory('cyber', 'Ransomware', this)">Ransomware</button>
+                    <button class="chip" onclick="app.filterCategory('cyber', 'Privacy', this)">Privacy</button>
+                    <button class="chip" onclick="app.filterCategory('cyber', 'Data Breaches', this)">Data Breaches</button>
+                </div>
+
+                <div class="three-column-layout">
+                    <aside class="col-sidebar-left">
+                        <div class="panel-box alert-panel">
+                            <h3 class="panel-title text-red"><i data-lucide="shield-alert"></i> Live Threat Radar</h3>
+                            <div class="threat-stat">
+                                <span class="stat-num text-red">14</span>
+                                <span class="stat-label">Active Zero-Days Tracked</span>
+                            </div>
+                            <div class="threat-stat">
+                                <span class="stat-num text-orange">210+</span>
+                                <span class="stat-label">Ransomware Incidents (30d)</span>
+                            </div>
+                            <div class="threat-stat">
+                                <span class="stat-num text-blue">6</span>
+                                <span class="stat-label">Sectors Under Elevated Watch</span>
+                            </div>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title">Cyber Intelligence Domains</h3>
+                            <div class="domain-tree" id="cyber-domain-tree"></div>
+                        </div>
+                    </aside>
+
+                    <main class="col-main-feed" id="cyber-feed"></main>
+
+                    <aside class="col-sidebar-right">
+                        <div id="cyber-right-ad-slot"></div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= AI PAGE ================= -->
+        <section id="page-ai" class="page-view">
+            <div class="container">
+                <div class="page-header-title">
+                    <h1>Artificial Intelligence</h1>
+                    <p>Generative AI, research breakthroughs, startups, tooling, enterprise adoption, and policy.</p>
+                </div>
+
+                <div class="ai-page-hero">
+                    <div class="card-editorial lead-story" id="ai-hero-story"></div>
+                    <div class="editor-picks-strip" id="ai-secondary-stories" style="grid-template-columns: 1fr; margin: 0;"></div>
+                </div>
+
+                <div class="filter-chip-bar" id="ai-filters">
+                    <button class="chip active" onclick="app.filterCategory('ai', 'all', this)">All AI</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'Generative AI', this)">Generative AI</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'AI Research', this)">AI Research</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'AI Startups', this)">AI Startups</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'AI Security', this)">AI Security</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'AI Tools & Agents', this)">AI Tools &amp; Agents</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'Enterprise AI', this)">Enterprise AI</button>
+                    <button class="chip" onclick="app.filterCategory('ai', 'AI Policy', this)">AI Policy</button>
+                </div>
+
+                <section class="section-block" style="border-top:none; padding-top:8px;">
+                    <div class="section-header"><h2>Latest in AI</h2></div>
+                    <div class="card-grid-3" id="ai-feed"></div>
+                </section>
+
+                <section class="section-block">
+                    <div class="section-header"><h2><i data-lucide="flask-conical" class="text-purple"></i> AI Research</h2></div>
+                    <div class="horizontal-scroll-container" id="ai-research-container"></div>
+                </section>
+
+                <section class="section-block">
+                    <div class="section-header"><h2><i data-lucide="rocket" class="text-cyan"></i> AI Startups</h2></div>
+                    <div class="horizontal-scroll-container" id="ai-startups-container"></div>
+                </section>
+
+                <section class="section-block">
+                    <div class="section-header"><h2><i data-lucide="bot" class="text-blue"></i> Tools &amp; Agents</h2></div>
+                    <div class="horizontal-scroll-container" id="ai-tools-container"></div>
+                </section>
+
+                <section class="section-block">
+                    <div class="section-header"><h2><i data-lucide="flame" class="text-orange"></i> Most Read in AI</h2></div>
+                    <div class="ai-most-read-panel">
+                        <div class="most-read-list" id="ai-most-read-container"></div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <!-- ================= PUBLISH / CONTRIBUTOR PAGE ================= -->
+        <section id="page-publish" class="page-view">
+            <div class="container">
+                <div class="publish-hero">
+                    <h1>Become a OPEN MEDIA Contributor</h1>
+                    <p>Submit technological insights, executive analysis, or cybersecurity research to our global editorial network.</p>
+                </div>
+
+                <div class="publish-tabs">
+                    <button class="publish-tab-btn active" data-tab="article" onclick="app.switchPublishTab('article', this)">Submit Article</button>
+                    <button class="publish-tab-btn" data-tab="event" onclick="app.switchPublishTab('event', this)">Submit Event</button>
+                    <button class="publish-tab-btn" data-tab="submissions" onclick="app.switchPublishTab('submissions', this)">My Submissions</button>
+                    <button class="publish-tab-btn" data-tab="feedback" onclick="app.switchPublishTab('feedback', this)">Moderation Feedback History</button>
+                </div>
+
+                <!-- SUBMIT ARTICLE -->
+                <div class="publish-panel active" id="publish-tab-article">
+                    <div class="panel-box" style="max-width:640px;">
+                        <h3 class="panel-title"><i data-lucide="pen-tool"></i> Article Submission</h3>
+                        <form id="publisher-form" onsubmit="app.handleArticleSubmission(event)">
+                            <div class="form-group">
+                                <label for="pub-title">Article Title</label>
+                                <input type="text" id="pub-title" required class="form-control" placeholder="e.g. Next-Gen Quantum Encryption Benchmarks">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="pub-category">Category</label>
+                                    <select id="pub-category" class="form-control" required>
+                                        <option value="IT">IT</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Cyber Security">Cyber Security</option>
+                                        <option value="AI">AI</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="pub-author">Author Name</label>
+                                    <input type="text" id="pub-author" readonly class="form-control" style="background: var(--color-light-gray); cursor: not-allowed; font-weight: 600;" placeholder="Authenticated Contributor">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pub-image">Thumbnail Image URL</label>
+                                <input type="url" id="pub-image" class="form-control" placeholder="https://images.unsplash.com/...">
+                            </div>
+                            <div class="form-group">
+                                <label for="article-image-file">Or choose a local image</label>
+                                <input type="file" id="article-image-file" accept="image/*" class="form-control" onchange="app.handleLocalImageSelection('article-image-file', 'pub-image', 'pub-image-preview')">
+                                <div id="pub-image-preview" style="margin-top:10px; min-height:20px;"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pub-description">Short Description</label>
+                                <input type="text" id="pub-description" class="form-control" required placeholder="One-line summary for the feed">
+                            </div>
+                            <div class="form-group">
+                                <label for="pub-content">Article Content</label>
+                                <textarea id="pub-content" rows="6" class="form-control" required placeholder="Enter the full article body..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="pub-tags">Tags (comma separated)</label>
+                                <input type="text" id="pub-tags" class="form-control" placeholder="e.g. AI, Enterprise, Policy">
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Submit for Editorial Review</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- SUBMIT EVENT -->
+                <div class="publish-panel" id="publish-tab-event">
+                    <div class="panel-box" style="max-width:640px;">
+                        <h3 class="panel-title"><i data-lucide="calendar-plus"></i> Event Submission</h3>
+                        <form id="event-publisher-form" onsubmit="app.handleEventSubmission(event)">
+                            <div class="form-group">
+                                <label for="evt-name">Event Name</label>
+                                <input type="text" id="evt-name" required class="form-control" placeholder="e.g. Enterprise Cloud Security Roundtable">
+                            </div>
+                            <div class="form-group">
+                                <label for="evt-desc">Description</label>
+                                <textarea id="evt-desc" rows="3" class="form-control" required placeholder="Short description of the event"></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="evt-date">Date</label>
+                                    <input type="date" id="evt-date" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="evt-time">Time</label>
+                                    <input type="time" id="evt-time" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="evt-category">Category</label>
+                                    <select id="evt-category" class="form-control" required>
+                                        <option value="">Select a category</option>
+                                        <option value="IT">IT</option>
+                                        <option value="Business">Business</option>
+                                        <option value="Cyber Security">Cyber Security</option>
+                                        <option value="AI">AI</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="evt-location">Location</label>
+                                    <input type="text" id="evt-location" class="form-control" required placeholder="e.g. Mumbai, India">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="evt-banner">Banner Image URL</label>
+                                <input type="url" id="evt-banner" class="form-control" placeholder="https://images.unsplash.com/...">
+                            </div>
+                            <div class="form-group">
+                                <label for="evt-banner-file">Or choose a local image</label>
+                                <input type="file" id="evt-banner-file" accept="image/*" class="form-control" onchange="app.handleLocalImageSelection('evt-banner-file', 'evt-banner', 'evt-banner-preview')">
+                                <div id="evt-banner-preview" style="margin-top:10px; min-height:20px;"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="evt-speaker-name">Speaker</label>
+                                <input type="text" id="evt-speaker-name" class="form-control" required placeholder="Speaker name">
+                            </div>
+                            <div class="form-group">
+                                <label for="evt-reg-url">Registration URL</label>
+                                <input type="url" id="evt-reg-url" class="form-control" placeholder="https://">
+                            </div>
+                            <button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Submit Event for Review</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- SUBMISSIONS TRACKING -->
+                <div class="publish-panel" id="publish-tab-submissions">
+                    <div class="panel-box">
+                        <h3 class="panel-title"><i data-lucide="file-check"></i> Submission Status Tracking</h3>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Category / Type</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="publisher-tracker-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="publish-panel" id="publish-tab-feedback">
+                    <div class="panel-box">
+                        <h3 class="panel-title"><i data-lucide="message-square-warning"></i> Moderation Feedback History</h3>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Article</th>
+                                        <th>Status</th>
+                                        <th>Editorial Feedback Reason</th>
+                                        <th>Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="publisher-feedback-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CAREERS PAGE ================= -->
+        <section id="page-careers" class="page-view">
+            <div class="container">
+                <div class="publish-hero">
+                    <h1>Join OPEN MEDIA</h1>
+                    <p>Help us build trusted technology, business, AI, and cybersecurity journalism.</p>
+                </div>
+                <div class="panel-box" style="max-width:640px; margin:0 auto 36px;">
+                    <h3 class="panel-title"><i data-lucide="briefcase"></i> Career Application</h3>
+                    <form id="careers-form" onsubmit="app.handleCareerApplication(event)" novalidate>
+                        <div class="form-group">
+                            <label for="career-name">Full Name</label>
+                            <input type="text" id="career-name" class="form-control" required minlength="2" maxlength="80" pattern="[A-Za-z][A-Za-z ]{1,79}" autocomplete="name" oninput="this.value = this.value.replace(/[^A-Za-z ]/g, '')">
+                        </div>
+                        <div class="form-group">
+                            <label for="career-email">Email Address</label>
+                            <input type="email" id="career-email" class="form-control" required maxlength="254" autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="career-role">Role</label>
+                            <select id="career-role" class="form-control" required>
+                                <option value="">Select a role</option>
+                                <option>Technology Journalist</option>
+                                <option>Data Journalist</option>
+                                <option>Cybersecurity Researcher</option>
+                                <option>Product Engineer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="career-portfolio">Portfolio URL</label>
+                            <input type="url" id="career-portfolio" class="form-control" required maxlength="2048" placeholder="https://" autocomplete="url">
+                        </div>
+                        <div class="form-group">
+                            <label for="career-note">Why are you a good fit?</label>
+                            <textarea id="career-note" class="form-control" required minlength="30" maxlength="2000"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Submit Application</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CONTACT PAGE ================= -->
+        <section id="page-contact" class="page-view">
+            <div class="container">
+                <div class="publish-hero">
+                    <h1>Contact OPEN MEDIA</h1>
+                    <p>Send a message to our editorial and support teams.</p>
+                </div>
+                <div class="panel-box" style="max-width:640px; margin:0 auto 36px;">
+                    <h3 class="panel-title"><i data-lucide="mail"></i> Contact Form</h3>
+                    <form id="contact-form" onsubmit="app.handleContactSubmission(event)" novalidate>
+                        <div class="form-group">
+                            <label for="contact-name">Full Name</label>
+                            <input type="text" id="contact-name" class="form-control" required minlength="2" maxlength="80" pattern="[A-Za-z][A-Za-z ]{1,79}" autocomplete="name" oninput="this.value = this.value.replace(/[^A-Za-z ]/g, '')">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-phone">Contact Number</label>
+                            <input type="tel" id="contact-phone" class="form-control" required minlength="7" maxlength="20" pattern="[+]?[0-9 ()-]+" inputmode="tel" autocomplete="tel" placeholder="e.g. +1 555 123 4567">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-email">Email Address</label>
+                            <input type="email" id="contact-email" class="form-control" required maxlength="254" autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-subject">Subject</label>
+                            <select id="contact-subject" class="form-control" required>
+                                <option value="">Select a subject</option>
+                                <option>Editorial feedback</option>
+                                <option>Partnership inquiry</option>
+                                <option>Account support</option>
+                                <option>General inquiry</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="contact-message">Message</label>
+                            <textarea id="contact-message" class="form-control" required minlength="10" maxlength="2000"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN REVIEW PANEL PAGE ================= -->
+        <section id="page-admin" class="page-view">
+            <div class="container">
+                <div class="publish-hero">
+                    <div style="display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; background:rgba(239,68,68,0.1); color:#DC2626; padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">
+                        <i data-lucide="shield-alert" style="width:14px;height:14px;"></i> RESTRICTED ACCESS: ADMIN ONLY
+                    </div>
+                    <h1>Executive Administration &amp; Review Center</h1>
+                    <p>Review and moderate article submissions, perform batch editorial actions, edit live articles, and manage platform publisher/admin accounts.</p>
+                </div>
+
+                <!-- Admin Navigation Tabs: 3 Consolidated Tabs -->
+                <div class="admin-nav-tabs">
+                    <button class="admin-tab-btn active" id="tab-btn-submissions" onclick="app.switchAdminTab('submissions')">
+                        <i data-lucide="file-check"></i> Submissions Pipeline
+                    </button>
+                    <button class="admin-tab-btn" id="tab-btn-users" onclick="app.switchAdminTab('users')">
+                        <i data-lucide="users"></i> User &amp; Role Management
+                    </button>
+                    <button class="admin-tab-btn" id="tab-btn-create" onclick="app.switchAdminTab('create')">
+                        <i data-lucide="square-pen"></i> Create / Publish Article
+                    </button>
+                </div>
+
+                <!-- TAB 1: SUBMISSIONS PIPELINE -->
+                <div id="admin-tab-submissions" class="admin-tab-content">
+                    <div class="admin-stats-grid" id="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-blue" id="admin-stat-total">0</span>
+                            <span class="stat-lbl">Total Submissions</span>
+                        </div>
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-orange" id="admin-stat-pending">0</span>
+                            <span class="stat-lbl">Pending Review</span>
+                        </div>
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-green" id="admin-stat-published">0</span>
+                            <span class="stat-lbl">Live Published</span>
+                        </div>
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-red" id="admin-stat-rejected">0</span>
+                            <span class="stat-lbl">Rejected / Changes</span>
+                        </div>
+                    </div>
+
+                    <!-- Batch Action Bar (Appears when items are selected) -->
+                    <div id="admin-batch-bar" class="admin-batch-bar" style="display:none;">
+                        <div class="batch-bar-left">
+                            <span class="batch-selected-count" id="batch-selected-count">0 items selected</span>
+                        </div>
+                        <div class="batch-bar-actions">
+                            <button class="btn btn-primary btn-sm" onclick="app.executeBatchAction('PUBLISHED')">
+                                <i data-lucide="check-check"></i> Batch Approve
+                            </button>
+                            <button class="btn btn-outline btn-sm" onclick="app.executeBatchAction('DRAFT')">
+                                <i data-lucide="eye-off"></i> Batch Take Down
+                            </button>
+                            <button class="btn btn-outline btn-sm text-red" onclick="app.executeBatchAction('REJECTED')">
+                                <i data-lucide="x"></i> Batch Reject
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="app.clearBatchSelection()">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+                            <h3 class="panel-title" style="margin:0;"><i data-lucide="file-check"></i> Editorial Submissions Pipeline</h3>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <label for="admin-filter-type" class="sr-only">Filter by type</label>
+                                <select id="admin-filter-type" class="form-control" style="font-size:0.82rem; padding:6px 12px; min-height:36px;" onchange="app.filterAdminSubmissions()">
+                                    <option value="all" selected>All Content (Articles &amp; Events)</option>
+                                    <option value="articles">Articles Only</option>
+                                    <option value="events">Events Only</option>
+                                </select>
+                                <label for="admin-filter-status" class="sr-only">Filter by status</label>
+                                <select id="admin-filter-status" class="form-control" style="font-size:0.82rem; padding:6px 12px; min-height:36px;" onchange="app.filterAdminSubmissions()">
+                                    <option value="">All Statuses</option>
+                                    <option value="PENDING" selected>Pending Review</option>
+                                    <option value="PUBLISHED">Published</option>
+                                    <option value="DRAFT">Draft</option>
+                                    <option value="CHANGES_REQUESTED">Changes Requested</option>
+                                    <option value="REJECTED">Rejected</option>
+                                </select>
+                                <button class="btn btn-outline btn-sm" onclick="app.loadAdminSubmissions()" title="Refresh submissions">
+                                    <i data-lucide="refresh-cw"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="admin-table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:36px; text-align:center;">
+                                            <input type="checkbox" id="select-all-submissions" onchange="app.toggleSelectAllSubmissions(this.checked)" title="Select all visible">
+                                        </th>
+                                        <th>Title &amp; Summary</th>
+                                        <th>Type / Category</th>
+                                        <th>Author / Organizer</th>
+                                        <th>Submitted</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-submissions-table-body">
+                                    <tr>
+                                        <td colspan="7" style="text-align:center; padding:24px; color:var(--color-dark-gray);">
+                                            Loading submissions pipeline...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: USER & ROLE MANAGEMENT -->
+                <div id="admin-tab-users" class="admin-tab-content" style="display:none;">
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-blue" id="admin-stat-user-total">0</span>
+                            <span class="stat-lbl">Total Registered</span>
+                        </div>
+                        <div class="admin-stat-card">
+                            <span class="stat-val" style="color:#4F46E5;" id="admin-stat-user-readers">0</span>
+                            <span class="stat-lbl">Readers (USER)</span>
+                        </div>
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-orange" id="admin-stat-user-pubs">0</span>
+                            <span class="stat-lbl">Publishers</span>
+                        </div>
+                        <div class="admin-stat-card">
+                            <span class="stat-val text-red" id="admin-stat-user-admins">0</span>
+                            <span class="stat-lbl">Administrators</span>
+                        </div>
+                    </div>
+
+                    <div class="admin-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h3 class="panel-title" style="margin:0;"><i data-lucide="shield-check"></i> Platform Identity Directory</h3>
+                                <p style="margin:4px 0 0; font-size:0.8rem; color:var(--color-dark-gray);">
+                                    Strict administrative RBAC directory. Primary Root Admin can generate new Publisher and Admin credentials.
+                                </p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <label for="admin-role-filter" class="sr-only">Filter by role</label>
+                                <select id="admin-role-filter" class="form-control" style="font-size:0.82rem; padding:6px 12px; min-height:36px;" onchange="app.filterAdminUsers()">
+                                    <option value="ALL" selected>All Roles</option>
+                                    <option value="USER">Reader</option>
+                                    <option value="PUBLISHER">Publisher</option>
+                                    <option value="ADMIN">Administrator</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm" id="btn-open-create-user" onclick="app.openCreateUserModal()" title="Add Publisher or Admin account">
+                                    <i data-lucide="user-plus"></i> Add Publisher / Admin
+                                </button>
+                                <button class="btn btn-outline btn-sm" onclick="app.loadAdminUsers()" title="Refresh users list">
+                                    <i data-lucide="refresh-cw"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="admin-table-wrapper">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role / Privilege</th>
+                                        <th>Registered</th>
+                                        <th>Articles</th>
+                                        <th>Comments</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-table-body">
+                                    <tr>
+                                        <td colspan="7" style="text-align:center; padding:24px; color:var(--color-dark-gray);">
+                                            Loading platform user directory...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: ADMIN ARTICLE AUTHORING -->
+                <div id="admin-tab-create" class="admin-tab-content" style="display:none;">
+                    <div class="admin-card admin-editor-card">
+                        <div class="admin-editor-heading">
+                            <div><h3 class="panel-title"><i data-lucide="square-pen"></i> Create and Publish</h3><p>Draft, format, categorise, and publish directly to the live newsroom.</p></div>
+                        </div>
+                        <form id="admin-create-article-form" onsubmit="app.handleAdminArticleCreate(event)">
+                            <div class="admin-form-group"><label for="admin-create-title">Article title</label><input id="admin-create-title" class="form-control" required maxlength="180"></div>
+                            <div class="admin-form-row">
+                                <div class="admin-form-group"><label for="admin-create-category">Category</label><select id="admin-create-category" class="form-control" required><option>Business</option><option>IT</option><option>Cyber Security</option><option>AI</option></select></div>
+                                <div class="admin-form-group"><label for="admin-create-domain">Topic / domain</label><input id="admin-create-domain" class="form-control" placeholder="e.g. AI Policy"></div>
+                            </div>
+                            <div class="admin-form-group"><label for="admin-create-image">Cover image URL <span class="muted">(optional)</span></label><input id="admin-create-image" type="url" class="form-control" placeholder="https://..."></div>
+                            <div class="admin-form-group"><label for="admin-create-image-file">Or choose a local image</label><input id="admin-create-image-file" type="file" accept="image/*" class="form-control" onchange="app.handleLocalImageSelection('admin-create-image-file', 'admin-create-image', 'admin-create-image-preview')"><div id="admin-create-image-preview" style="margin-top:10px; min-height:20px;"></div></div>
+                            <div class="admin-form-group"><label for="admin-create-summary">Summary</label><textarea id="admin-create-summary" class="form-control" required maxlength="500"></textarea></div>
+                            <div class="admin-form-group"><label for="admin-create-body">Article body</label><textarea id="admin-create-body" class="form-control admin-article-body" required></textarea></div>
+                            <div class="admin-editor-actions"><button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Publish Article</button><button type="button" class="btn btn-outline" onclick="app.saveAdminDraft()"><i data-lucide="file-pen-line"></i> Save Draft</button></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="modal-overlay" id="modal-auth" role="dialog" aria-modal="true" aria-label="Account access">
+        <div class="admin-modal-card">
+            <div class="admin-modal-header"><h3 id="auth-modal-title"><i data-lucide="log-in"></i> Login</h3><button class="icon-btn" onclick="app.closeAuthModal()" aria-label="Close"><i data-lucide="x"></i></button></div>
+            <form id="auth-login-form" onsubmit="app.handleLogin(event)">
+                <div class="admin-form-group"><label for="login-email">Email</label><input id="login-email" class="form-control" type="email" required></div>
+                <div class="admin-form-group">
+                    <label for="login-password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input id="login-password" class="form-control" type="password" required>
+                        <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('login-password', this)" aria-label="Toggle password visibility" title="Show / Hide password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Login</button> <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('register')">Create an account</button>
+            </form>
+            <form id="auth-register-form" onsubmit="app.handleRegister(event)" hidden>
+                <div class="admin-form-group"><label for="register-name">Name</label><input id="register-name" class="form-control" required></div>
+                <div class="admin-form-group"><label for="register-email">Email</label><input id="register-email" class="form-control" type="email" required></div>
+                <div class="admin-form-group">
+                    <label for="register-password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input id="register-password" class="form-control" type="password" minlength="8" required>
+                        <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('register-password', this)" aria-label="Toggle password visibility" title="Show / Hide password">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Register</button> <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('login')">Already have an account?</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Newsletter Section -->
+    <section class="newsletter-section">
+        <div class="container">
+            <div class="newsletter-box">
+                <div class="newsletter-text">
+                    <h2>Stay Updated with Technology &amp; Cybersecurity Trends</h2>
+                    <p>Direct intelligence briefs delivered to your inbox every morning. Free, curated, and high-impact.</p>
+                </div>
+                <form class="newsletter-form" onsubmit="app.handleNewsletterSubscribe(event)">
+                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col brand-col">
+                    <div class="logo-text">OPEN <span>MEDIA</span></div>
+                    <p>OPEN MEDIA delivers worldwide technology, business, AI, and cybersecurity intelligence through trusted journalism, expert analysis, and industry insights.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Categories</h4>
+                    <ul>
+                        <li><a href="#tech" onclick="app.navigateTo('tech')">IT</a></li>
+                        <li><a href="#business" onclick="app.navigateTo('business')">Business</a></li>
+                        <li><a href="#cyber" onclick="app.navigateTo('cyber')">Cyber Security</a></li>
+                        <li><a href="#ai" onclick="app.navigateTo('ai')">AI</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#about-us" onclick="app.openLegalPage('about')">About Us</a></li>
+                        <li><a href="#careers" onclick="app.navigateTo('careers')">Careers</a></li>
+                        <li><a href="javascript:void(0)">Advertise</a></li>
+                        <li><a href="#contact" onclick="app.navigateTo('contact')">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal &amp; Policy</h4>
+                    <ul>
+                        <li><a href="#privacy-policy" onclick="app.openLegalPage('privacy')">Privacy Policy</a></li>
+                        <li><a href="#terms-of-service" onclick="app.openLegalPage('terms')">Terms of Service</a></li>
+                        <li><a href="#editorial-guidelines" onclick="app.openLegalPage('editorial')">Editorial Guidelines</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 OPEN MEDIA Group. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
+        <button class="nav-item" data-page="home" onclick="app.navigateTo('home')">
+            <i data-lucide="home"></i><span>Home</span>
+        </button>
+        <button class="nav-item reader-only-nav" data-page="foryou" hidden style="display:none;" onclick="app.navigateTo('foryou')">
+            <i data-lucide="bookmark"></i><span>For You</span>
+        </button>
+        <button class="nav-item" onclick="app.openSearch()">
+            <i data-lucide="search"></i><span>Search</span>
+        </button>
+        <button class="nav-item" data-page="ai" onclick="app.navigateTo('ai')">
+            <i data-lucide="sparkles"></i><span>AI</span>
+        </button>
+        <button class="nav-item publisher-only-nav" data-page="publish" hidden style="display:none;" onclick="app.navigateTo('publish')">
+            <i data-lucide="pen-tool"></i><span>Publish</span>
+        </button>
+        <button class="nav-item admin-only-nav" data-page="admin" hidden style="display:none;" onclick="app.navigateTo('admin')">
+            <i data-lucide="shield-check"></i><span>Admin</span>
+        </button>
+    </nav>
+
+    <!-- AI NEWS TELLER FLOATING DRAWER / BOTTOM SHEET -->
+    <div class="ai-teller-drawer" id="ai-teller-drawer" role="dialog" aria-label="AI News Teller">
+        <div class="ai-header">
+            <div class="ai-title"><i data-lucide="sparkles" class="text-cyan"></i> AI News Teller</div>
+            <button class="icon-btn" onclick="app.toggleAITeller()" aria-label="Close AI News Teller"><i data-lucide="x"></i></button>
+        </div>
+        <div class="ai-body" id="ai-body-content">
+            <p class="ai-intro">Hello D. Phani Kumar. Select an AI tool or ask a question about current news intelligence:</p>
+            <div class="ai-actions-grid">
+                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('summarize')"><i data-lucide="file-text"></i> Summarize</button>
+                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('takeaways')"><i data-lucide="list-checks"></i> Key Takeaways</button>
+                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('explain')"><i data-lucide="help-circle"></i> Explain Simply</button>
+                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('readAloud')"><i data-lucide="volume-2"></i> Read Aloud</button>
+                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('translate')"><i data-lucide="languages"></i> Translate</button>
+                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('recommend')"><i data-lucide="compass"></i> Recommend</button>
+            </div>
+            <form class="ai-input-row" onsubmit="app.handleAIAsk(event)">
+                <label for="ai-ask-input" class="sr-only">Ask about today's news</label>
+                <input type="text" id="ai-ask-input" class="form-control" placeholder="Ask about today's news...">
+                <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="arrow-up"></i></button>
+            </form>
+            <div class="ai-output-box" id="ai-output-box">
+                <span class="placeholder-text">AI responses and summaries will appear here. This is a frontend simulation.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI DRAWER BACKDROP OVERLAY -->
+    <div class="ai-drawer-overlay" id="ai-drawer-overlay" onclick="app.toggleAITeller()"></div>
+
+    <!-- SEARCH OVERLAY MODAL -->
+    <div class="modal-overlay" id="search-modal" role="dialog" aria-modal="true" aria-label="Search">
+        <div class="search-modal-card">
+            <div class="search-input-wrapper">
+                <i data-lucide="search"></i>
+                <input type="text" id="search-input" placeholder="Search news, companies, topics, CVEs..." oninput="app.handleSearchInput(this.value)">
+                <button class="icon-btn" onclick="app.closeSearch()" aria-label="Close search"><i data-lucide="x"></i></button>
+            </div>
+            <div class="search-results-area" id="search-results-area"></div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS OVERLAY MODAL -->
+    <div class="modal-overlay" id="notifications-modal" role="dialog" aria-modal="true" aria-label="Notifications">
+        <div class="notif-modal-card">
+            <div class="notif-header">
+                <h3>Notifications</h3>
+                <button class="icon-btn" onclick="app.closeNotifications()" aria-label="Close notifications"><i data-lucide="x"></i></button>
+            </div>
+            <div class="notif-list" id="notif-list-container"></div>
+        </div>
+    </div>
+
+    <!-- ARTICLE SPA READER MODAL -->
+    <div class="modal-overlay" id="article-modal" role="dialog" aria-modal="true" aria-label="Article reader">
+        <div class="article-modal-card" id="article-modal-content"></div>
+    </div>
+
+    <!-- EVENT REGISTRATION MODAL -->
+    <div class="modal-overlay" id="event-modal" role="dialog" aria-modal="true" aria-label="Event registration">
+        <div class="event-modal-card">
+            <button class="icon-btn close-event-btn" onclick="app.closeEventModal()" aria-label="Close"><i data-lucide="x"></i></button>
+            <div id="event-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- LEGAL CONTENT MODAL -->
+    <div class="modal-overlay" id="legal-modal" role="dialog" aria-modal="true" aria-label="Legal information" onclick="if (event.target === this) app.closeLegalPage()">
+        <div class="event-modal-card legal-modal-card">
+            <button class="icon-btn close-event-btn" onclick="app.closeLegalPage()" aria-label="Close legal information"><i data-lucide="x"></i></button>
+            <div id="legal-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- ADD PUBLISHER / ADMIN MODAL -->
+    <div class="modal-overlay" id="modal-create-user" role="dialog" aria-modal="true" aria-label="Create platform account">
+        <div class="admin-modal-card">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="user-plus" class="text-blue"></i> Add Publisher or Secondary Admin</h3>
+                <button class="icon-btn" onclick="app.closeCreateUserModal()" aria-label="Close modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="create-user-form" onsubmit="app.handleCreateUserSubmit(event)">
+                <div class="admin-form-group">
+                    <label for="create-user-name">Full Name *</label>
+                    <input type="text" id="create-user-name" class="form-control" placeholder="e.g. Elena Rostova" required minlength="2">
+                </div>
+                <div class="admin-form-group">
+                    <label for="create-user-email">Email Address *</label>
+                    <input type="email" id="create-user-email" class="form-control" placeholder="e.g. elena@openmedia.test" required>
+                </div>
+                <div class="admin-form-row">
+                    <div class="admin-form-group">
+                        <label for="create-user-role">Account Role *</label>
+                        <select id="create-user-role" class="form-control" required>
+                            <option value="PUBLISHER" selected>PUBLISHER (Can submit articles)</option>
+                            <option value="ADMIN">ADMIN (Secondary Administrator)</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="create-user-password">Password (Optional)</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="create-user-password" class="form-control" placeholder="Auto-generates if left empty">
+                            <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('create-user-password', this)" aria-label="Toggle password visibility" title="Show / Hide password">
+                                <i data-lucide="eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="create-user-feedback" style="display:none;"></div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeCreateUserModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-create-user">
+                        <i data-lucide="plus-circle"></i> Create Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN EDIT ARTICLE MODAL -->
+    <div class="modal-overlay" id="modal-edit-article" role="dialog" aria-modal="true" aria-label="Edit Article Content">
+        <div class="admin-modal-card">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="edit-3" class="text-blue"></i> Full Editorial Article Editor</h3>
+                <button class="icon-btn" onclick="app.closeEditArticleModal()" aria-label="Close modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="edit-article-form" onsubmit="app.handleEditArticleSubmit(event)">
+                <input type="hidden" id="edit-article-id">
+                <div class="admin-form-group">
+                    <label for="edit-article-title">Article Headline / Title *</label>
+                    <input type="text" id="edit-article-title" class="form-control" required minlength="5">
+                </div>
+                <div class="admin-form-row">
+                    <div class="admin-form-group">
+                        <label for="edit-article-category">Category *</label>
+                        <select id="edit-article-category" class="form-control" required>
+                            <option value="IT">IT</option>
+                            <option value="Business">Business</option>
+                            <option value="Cyber Security">Cyber Security</option>
+                            <option value="AI">AI</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="edit-article-domain">Domain / Topic</label>
+                        <input type="text" id="edit-article-domain" class="form-control" placeholder="e.g. Cloud Computing, Ransomware">
+                    </div>
+                </div>
+                <div class="admin-form-row">
+                    <div class="admin-form-group">
+                        <label for="edit-article-status">Publication Status *</label>
+                        <select id="edit-article-status" class="form-control" required>
+                            <option value="PENDING">PENDING (In Review)</option>
+                            <option value="PUBLISHED">PUBLISHED (Live on Platform)</option>
+                            <option value="DRAFT">DRAFT (Taken down / Staging)</option>
+                            <option value="REJECTED">REJECTED</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="edit-article-image">Image URL</label>
+                        <input type="url" id="edit-article-image" class="form-control" placeholder="https://images.unsplash.com/...">
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label for="edit-article-image-file">Or choose a local image</label>
+                    <input type="file" id="edit-article-image-file" accept="image/*" class="form-control" onchange="app.handleLocalImageSelection('edit-article-image-file', 'edit-article-image', 'edit-article-image-preview')">
+                    <div id="edit-article-image-preview" style="margin-top:10px; min-height:20px;"></div>
+                </div>
+                <div class="admin-form-group">
+                    <label for="edit-article-summary">Editorial Summary / Subtitle *</label>
+                    <textarea id="edit-article-summary" class="form-control" rows="2" required minlength="10"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="edit-article-body">Full Article Body *</label>
+                    <textarea id="edit-article-body" class="form-control" rows="6" required minlength="20"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="edit-article-feedback">Editorial Feedback / Notes</label>
+                    <textarea id="edit-article-feedback" class="form-control" rows="3" placeholder="Optional notes for authors and reviewers"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeEditArticleModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN REQUEST CHANGES / EDITORIAL FEEDBACK MODAL -->
+    <div class="modal-overlay" id="modal-request-changes" role="dialog" aria-modal="true" aria-label="Editorial Feedback">
+        <div class="admin-modal-card" style="max-width:540px;">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="message-square-warning" class="text-orange"></i> Editorial Feedback</h3>
+                <button class="icon-btn" onclick="app.closeRequestChangesModal()" aria-label="Close modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="request-changes-form" onsubmit="app.handleRequestChangesSubmit(event)">
+                <input type="hidden" id="feedback-item-id">
+                <input type="hidden" id="feedback-item-type" value="article">
+                <input type="hidden" id="feedback-target-status" value="CHANGES_REQUESTED">
+                <div class="admin-form-group">
+                    <p style="font-size:0.88rem; font-weight:700; margin-bottom:8px;">Target Submission: <span id="feedback-item-title" style="color:var(--color-royal-blue);"></span></p>
+                    <p id="feedback-action-description" style="font-size:0.8rem; color:var(--color-dark-gray); margin-bottom:12px;">Specify the editorial improvements required before this post can be approved.</p>
+                </div>
+                <div class="admin-form-group">
+                    <label for="feedback-reason-text">Editorial Feedback Reason *</label>
+                    <textarea id="feedback-reason-text" class="form-control" rows="4" required placeholder="e.g. Please strengthen references in Section 2 and clarify methodology..."></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeRequestChangesModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-feedback">
+                        <i data-lucide="send"></i> Submit Feedback
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PUBLISHER RESUBMIT ARTICLE MODAL -->
+    <div class="modal-overlay" id="modal-resubmit-article" role="dialog" aria-modal="true" aria-label="Resubmit Article">
+        <div class="admin-modal-card" style="max-width:760px;">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="refresh-cw" class="text-blue"></i> Edit &amp; Resubmit Article</h3>
+                <button class="icon-btn" onclick="app.closeResubmitArticleModal()" aria-label="Close modal"><i data-lucide="x"></i></button>
+            </div>
+            <div id="resubmit-editorial-feedback-banner" class="publisher-notice notice-changes" style="display:none; margin-bottom:18px;">
+                <i data-lucide="alert-circle" style="flex-shrink:0; margin-top:2px;"></i>
+                <div>
+                    <b>Editorial Feedback from Admin:</b>
+                    <p id="resubmit-feedback-text" style="margin-top:4px; font-size:0.88rem; line-height:1.5;"></p>
+                </div>
+            </div>
+            <form id="resubmit-article-form" onsubmit="app.handleResubmitArticleSubmit(event)">
+                <input type="hidden" id="resubmit-article-id">
+                <div class="admin-form-group">
+                    <label for="resubmit-title">Article Headline / Title *</label>
+                    <input type="text" id="resubmit-title" class="form-control" required minlength="5">
+                </div>
+                <div class="admin-form-row">
+                    <div class="admin-form-group">
+                        <label for="resubmit-category">Category *</label>
+                        <select id="resubmit-category" class="form-control" required>
+                            <option value="IT">IT</option>
+                            <option value="Business">Business</option>
+                            <option value="Cyber Security">Cyber Security</option>
+                            <option value="AI">AI</option>
+                        </select>
+                    </div>
+                    <div class="admin-form-group">
+                        <label for="resubmit-domain">Domain / Topic</label>
+                        <input type="text" id="resubmit-domain" class="form-control" placeholder="e.g. Threat Insights, Cloud">
+                    </div>
+                </div>
+                <div class="admin-form-group">
+                    <label for="resubmit-image">Thumbnail Image URL</label>
+                    <input type="url" id="resubmit-image" class="form-control" placeholder="https://images.unsplash.com/...">
+                </div>
+                <div class="admin-form-group">
+                    <label for="resubmit-image-file">Or choose a local image</label>
+                    <input type="file" id="resubmit-image-file" accept="image/*" class="form-control" onchange="app.handleLocalImageSelection('resubmit-image-file', 'resubmit-image', 'resubmit-image-preview')">
+                    <div id="resubmit-image-preview" style="margin-top:10px; min-height:20px;"></div>
+                </div>
+                <div class="admin-form-group">
+                    <label for="resubmit-summary">Short Description / Summary *</label>
+                    <textarea id="resubmit-summary" class="form-control" rows="2" required minlength="10"></textarea>
+                </div>
+                <div class="admin-form-group">
+                    <label for="resubmit-body">Full Article Body *</label>
+                    <textarea id="resubmit-body" class="form-control" rows="6" required minlength="20"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeResubmitArticleModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-resubmit">
+                        <i data-lucide="send"></i> Resubmit for Editorial Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+    <!-- Real-time Socket.io Client -->
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script>
+        if (typeof io === 'undefined') {
+            const socketHost = window.location.hostname || 'localhost';
+            document.write('<script src="http://' + socketHost + ':4000/socket.io/socket.io.js"><\/script>');
+        }
+    </script>
+    <!-- JS Scripts -->
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
