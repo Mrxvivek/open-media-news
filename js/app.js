@@ -4,7 +4,7 @@
  */
 
 const CAT_MAP = { tech: 'IT', business: 'Business', cyber: 'Cyber Security', ai: 'AI' };
-const VALID_PAGES = ['home', 'foryou', 'business', 'tech', 'cyber', 'ai', 'publish', 'admin', 'careers', 'contact'];
+const VALID_PAGES = ['home', 'foryou', 'business', 'tech', 'cyber', 'ai', 'publish', 'admin', 'careers', 'contact', 'advertise'];
 
 const TECH_DOMAIN_GROUPS = {
   'Artificial Intelligence': ['Generative AI', 'AI Startups', 'Machine Learning', 'AI Policy', 'AI Tools', 'Indian Language AI'],
@@ -1538,6 +1538,9 @@ class GlobalCoverageApp {
   navigateTo(pageId, pushHash = true) {
     if (!VALID_PAGES.includes(pageId)) pageId = 'home';
 
+    // Ensure any open modal, drawer, or overlay is cleanly dismissed upon page navigation
+    this.closeAllModals();
+
     // Strict Role-Aware Navigation Guards
     const user = this.getCurrentUser();
     if (pageId === 'admin' && (!user || user.role !== 'ADMIN')) {
@@ -1606,15 +1609,7 @@ class GlobalCoverageApp {
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        this.closeArticleModal();
-        this.closeEventModal();
-        this.closeLegalPage();
-        this.closeSearch();
-        this.closeNotifications();
-        document.getElementById('ai-teller-drawer')?.classList.remove('show');
-        document.getElementById('ai-drawer-overlay')?.classList.remove('show');
-        document.getElementById('profile-menu')?.classList.remove('show');
-        this.updateModalOpenState(false);
+        this.closeAllModals();
       }
       if (document.getElementById('page-home').classList.contains('active') && document.getElementById('magazine-flip-card')) {
         if (e.key === 'ArrowRight') this.nextTrendingStory(true);
@@ -1631,6 +1626,10 @@ class GlobalCoverageApp {
       const trigger = e.target.closest('.profile-dropdown-wrapper');
       if (!trigger && menu?.classList.contains('show')) menu.classList.remove('show');
 
+      // Click to close fallback on any darkened overlay backdrop
+      if (e.target.classList.contains('modal-overlay') || e.target.classList.contains('ai-drawer-overlay') || e.target.classList.contains('mobile-drawer-overlay') || e.target.id === 'ai-drawer-overlay' || e.target.id === 'mobile-drawer-overlay') {
+        this.closeAllModals();
+      }
     });
   }
 
@@ -2057,21 +2056,21 @@ class GlobalCoverageApp {
     return `<div class="empty-state"><h4>No stories currently available</h4><p>There are no ${label} stories in this domain right now. Check back soon.</p></div>`;
   }
 
-  // --- Events Carousel ---
+  // --- Upcoming Webinars & Events Grid ---
   renderEvents() {
     const container = document.getElementById('events-container');
     if (!container) return;
     container.innerHTML = this.getHomeEvents().map(e => `
-      <div class="event-card">
-        <div class="event-banner">
+      <div class="webinar-card event-card">
+        <div class="webinar-banner event-banner">
           <img src="${e.image}" alt="${e.title}" loading="lazy">
-          <span class="event-type-tag">${e.type || 'Event'}</span>
+          <span class="event-type-tag">${e.type || 'Webinar'}</span>
         </div>
-        <div class="event-card-body">
-          <span class="event-date">${e.date} · ${e.time || ''}</span>
-          <h4 class="event-title">${e.title}</h4>
-          <p class="event-speaker">Speaker: ${e.speaker} · ${e.organization || ''}</p>
-          <button class="btn btn-primary btn-sm" style="width:100%;" onclick="app.openEventModal('${e.id}')">Register Now</button>
+        <div class="webinar-card-body event-card-body">
+          <span class="webinar-date event-date">${e.date} · ${e.time || ''}</span>
+          <h4 class="webinar-title event-title">${e.title}</h4>
+          <p class="webinar-speaker event-speaker">Speaker: ${e.speaker} · ${e.organization || ''}</p>
+          <button class="btn btn-primary btn-sm webinar-btn" onclick="app.openEventModal('${e.id}')">Register Now</button>
         </div>
       </div>
     `).join('');
@@ -2673,13 +2672,37 @@ class GlobalCoverageApp {
     this.showToast('Registration successful! Access pass sent to your email.');
   }
 
+  closeModal(modalId = null) {
+    if (modalId) {
+      const el = document.getElementById(modalId);
+      if (el) el.classList.remove('show', 'active');
+    } else {
+      this.closeAllModals();
+    }
+    this.updateModalOpenState(false);
+  }
+
+  closeAllModals() {
+    document.querySelectorAll('.modal-overlay, .ai-teller-drawer, .ai-drawer-overlay, .mobile-drawer, .mobile-drawer-overlay').forEach(el => {
+      el.classList.remove('show', 'active', 'dimmed');
+    });
+    document.body.classList.remove('modal-open', 'dimmed');
+    document.documentElement.classList.remove('modal-open', 'dimmed');
+    this.updateModalOpenState(false);
+  }
+
   // --- AI News Teller ---
-  toggleAITeller() {
+  toggleAITeller(forceState = null) {
     const drawer = document.getElementById('ai-teller-drawer');
     const overlay = document.getElementById('ai-drawer-overlay');
     if (!drawer) return;
-    const isShowing = drawer.classList.toggle('show');
-    if (overlay) overlay.classList.toggle('show', isShowing);
+    const isShowing = forceState !== null ? forceState : !drawer.classList.contains('show');
+    drawer.classList.toggle('show', isShowing);
+    drawer.classList.toggle('active', isShowing);
+    if (overlay) {
+      overlay.classList.toggle('show', isShowing);
+      overlay.classList.toggle('active', isShowing);
+    }
     this.updateModalOpenState(isShowing);
     if (isShowing) {
       this.renderAIChat();
@@ -2707,7 +2730,92 @@ class GlobalCoverageApp {
     this.renderAIChat();
   }
 
-  async runAIFunction(type) {
+  async summarizeAITeller(triggerBtn = null) {
+    const btn = triggerBtn || document.getElementById('home-summarize-btn') || document.getElementById('btn-ai-summarize');
+    let originalHtml = '';
+    if (btn) {
+      originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Summarizing...`;
+      this.refreshIcons(btn);
+    }
+
+    const homeBox = document.getElementById('ai-home-summary-box');
+    const homeContent = document.getElementById('ai-home-summary-content');
+    if (homeBox && homeContent) {
+      homeBox.style.display = 'block';
+      homeContent.innerHTML = `<div class="ai-thinking"><i data-lucide="loader-2" class="spin"></i> Synthesizing latest news intelligence from the newsroom...</div>`;
+      this.refreshIcons(homeContent);
+      homeBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    const output = document.getElementById('ai-output-box');
+    if (output) {
+      this.addAIMessage('user', 'Summarize the latest important news in two short paragraphs.');
+      output.insertAdjacentHTML('beforeend', '<div class="ai-thinking"><i data-lucide="loader-2" class="spin"></i> Generating executive summary...</div>');
+      output.scrollTop = output.scrollHeight;
+      this.refreshIcons(output);
+    }
+
+    let summary = '';
+    try {
+      // 1. Attempt fetch request to backend API
+      try {
+        const response = await fetch(`${this.apiBase}/articles/summarize`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: 'Summarize latest news' })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.summary) {
+            summary = data.summary;
+          }
+        }
+      } catch (networkError) {
+        console.warn('Backend summarize endpoint offline or unreachable:', networkError);
+        this.showToast('Notice: Live AI service offline. Summarizing loaded newsroom coverage.', 'info');
+      }
+
+      // 2. Fallback to local AI news synthesis if backend was unavailable
+      if (!summary) {
+        summary = this.localAIAnswer('summarize');
+      }
+
+      // 3. Render summary into home page summary box
+      if (homeContent) {
+        homeContent.innerHTML = `<div class="ai-summary-text">${this.escapeHTML(summary).replace(/\n/g, '<br>')}</div>`;
+      }
+
+      // 4. Also register message in AI chat drawer
+      this.aiChat = this.aiChat.filter(message => message.content !== 'Generating executive summary...');
+      this.addAIMessage('assistant', summary);
+      this.showToast('News summary generated successfully!');
+    } catch (error) {
+      console.error('Error generating AI summary:', error);
+      this.showToast('Failed to generate AI summary: ' + (error.message || 'Network error'), 'error');
+      if (homeContent) {
+        homeContent.innerHTML = `<div class="ai-error-text text-red"><i data-lucide="alert-circle"></i> Unable to generate summary at this time. Please check your network connection.</div>`;
+        this.refreshIcons(homeContent);
+      }
+    } finally {
+      if (output) {
+        const thinkingEls = output.querySelectorAll('.ai-thinking');
+        thinkingEls.forEach(el => el.remove());
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        this.refreshIcons(btn);
+      }
+    }
+  }
+
+  async runAIFunction(type, triggerBtn = null) {
+    if (type === 'summarize') {
+      await this.summarizeAITeller(triggerBtn);
+      return;
+    }
     const prompts = {
       summarize: 'Summarize the latest important news in two short paragraphs.',
       takeaways: 'What are the key takeaways from the latest technology and cybersecurity news?',
@@ -2716,36 +2824,65 @@ class GlobalCoverageApp {
       recommend: 'Recommend three stories I should read next and explain why.',
       readAloud: 'Give me a concise briefing of the latest news to read aloud.'
     };
-    await this.askAI(prompts[type] || prompts.summarize, type === 'readAloud');
+    await this.askAI(prompts[type] || prompts.summarize, type === 'readAloud', triggerBtn);
   }
 
-  async askAI(question, readAloud = false) {
+  async askAI(question, readAloud = false, triggerBtn = null) {
     const q = question.trim();
     if (!q) return;
-    this.addAIMessage('user', q);
-    const output = document.getElementById('ai-output-box');
-    output.insertAdjacentHTML('beforeend', '<div class="ai-thinking">Searching the newsroom...</div>');
-    output.scrollTop = output.scrollHeight;
 
-    let answer;
-    const endpoint = window.OPEN_MEDIA_AI_ENDPOINT;
-    if (endpoint) {
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, messages: this.aiChat, articles: this.aiContext() })
-        });
-        if (!response.ok) throw new Error(`AI endpoint returned ${response.status}`);
-        const data = await response.json();
-        answer = data.answer || data.message || data.content;
-      } catch (error) {
-        answer = `The live AI service is unavailable, so I searched the loaded newsroom instead. ${this.localAIAnswer(q)}`;
-      }
-    } else {
-      answer = this.localAIAnswer(q);
+    let originalBtnHtml = '';
+    if (triggerBtn) {
+      originalBtnHtml = triggerBtn.innerHTML;
+      triggerBtn.disabled = true;
+      triggerBtn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Processing...`;
+      this.refreshIcons(triggerBtn);
     }
 
-    this.aiChat = this.aiChat.filter(message => message.content !== 'Searching the newsroom...');
+    this.addAIMessage('user', q);
+    const output = document.getElementById('ai-output-box');
+    if (output) {
+      output.insertAdjacentHTML('beforeend', '<div class="ai-thinking"><i data-lucide="loader-2" class="spin"></i> Searching the newsroom...</div>');
+      output.scrollTop = output.scrollHeight;
+      this.refreshIcons(output);
+    }
+
+    let answer;
+    try {
+      const endpoint = window.OPEN_MEDIA_AI_ENDPOINT || `${this.apiBase}/articles/summarize`;
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q, messages: this.aiChat, articles: this.aiContext() })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          answer = data.answer || data.summary || data.message || data.content;
+        }
+      } catch (err) {
+        console.warn('Live AI endpoint unreachable, using local news synthesis:', err);
+      }
+
+      if (!answer) {
+        answer = this.localAIAnswer(q);
+      }
+    } catch (err) {
+      console.error('askAI error:', err);
+      this.showToast('Network error during AI request. Using local news synthesis.', 'warning');
+      answer = this.localAIAnswer(q);
+    } finally {
+      if (output) {
+        const thinkingEls = output.querySelectorAll('.ai-thinking');
+        thinkingEls.forEach(el => el.remove());
+      }
+      if (triggerBtn) {
+        triggerBtn.disabled = false;
+        triggerBtn.innerHTML = originalBtnHtml;
+        this.refreshIcons(triggerBtn);
+      }
+    }
+
     this.addAIMessage('assistant', answer || 'I could not find an answer in the current newsroom. Try asking about AI, business, cloud, or cybersecurity.');
     if (readAloud && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -3255,6 +3392,19 @@ class GlobalCoverageApp {
     ]);
     if (!values) return;
     this.showToast(`Thanks, ${values.name}. Your message was sent.`);
+    e.target.reset();
+  }
+
+  handleAdvertiseSubmission(e) {
+    e.preventDefault();
+    const values = this.validatePublicForm(e.target, [
+      { id: 'adv-name', key: 'name' },
+      { id: 'adv-company', key: 'company' },
+      { id: 'adv-email', key: 'email' },
+      { id: 'adv-package', key: 'package' }
+    ]);
+    if (!values) return;
+    this.showToast(`Thank you, ${values.name}. Our media partnerships team will contact ${values.email} within 24 hours.`);
     e.target.reset();
   }
 

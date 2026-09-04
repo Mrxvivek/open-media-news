@@ -142,14 +142,38 @@
                 </section>
 
                 <!-- Upcoming Webinars & Events -->
-                <section class="section-block">
+                <section class="section-block webinar-section">
                     <div class="section-header">
                         <h2><i data-lucide="calendar" class="text-purple"></i> Upcoming Webinars &amp; Events</h2>
                     </div>
-                    <div class="horizontal-scroll-container" id="events-container"></div>
+                    <div class="webinar-grid" id="events-container"></div>
                 </section>
 
-                
+                <!-- AI News Teller Quick Intelligence Bar -->
+                <section class="section-block ai-teller-home-section">
+                    <div class="ai-home-banner">
+                        <div class="ai-home-banner-info">
+                            <div class="ai-home-badge"><i data-lucide="sparkles"></i> AI NEWS TELLER</div>
+                            <h3>Instant Intelligence &amp; News Synthesis</h3>
+                            <p>Get an AI-synthesized briefing of all breaking news across technology, markets, and cybersecurity in seconds.</p>
+                        </div>
+                        <div class="ai-home-banner-actions">
+                            <button class="btn btn-primary" id="home-summarize-btn" onclick="app.summarizeAITeller(this)">
+                                <i data-lucide="sparkles"></i> Summarize News
+                            </button>
+                            <button class="btn btn-outline" onclick="app.toggleAITeller()">
+                                <i data-lucide="bot"></i> Open AI Teller
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ai-home-summary-box" id="ai-home-summary-box" style="display: none;">
+                        <div class="ai-summary-header">
+                            <h4><i data-lucide="file-text" class="text-cyan"></i> Executive AI Summary</h4>
+                            <button class="icon-btn" onclick="document.getElementById('ai-home-summary-box').style.display='none'" aria-label="Close summary"><i data-lucide="x"></i></button>
+                        </div>
+                        <div class="ai-summary-content" id="ai-home-summary-content"></div>
+                    </div>
+                </section>
 
             </div>
         </section>
@@ -630,6 +654,103 @@
             </div>
         </section>
 
+        <!-- ================= ADVERTISE PAGE ================= -->
+        <section id="page-advertise" class="page-view">
+            <div class="container">
+                <div class="publish-hero">
+                    <div style="display:inline-flex; align-items:center; gap:8px; margin-bottom:10px; background:rgba(37,99,235,0.1); color:var(--color-royal-blue); padding:4px 12px; border-radius:20px; font-weight:700; font-size:0.75rem;">
+                        <i data-lucide="megaphone" style="width:14px;height:14px;"></i> MEDIA &amp; PARTNERSHIPS
+                    </div>
+                    <h1>Advertise with OPEN MEDIA</h1>
+                    <p>Connect your brand with leaders, decision-makers, engineers, and security executives across the global technology ecosystem.</p>
+                </div>
+
+                <!-- Metrics & Reach Overview -->
+                <div class="advertise-metrics-grid">
+                    <div class="panel-box text-center">
+                        <h2 class="text-blue" style="font-size: 2.2rem; font-weight: 800; margin-bottom: 4px;">2.4M+</h2>
+                        <p class="text-muted" style="font-weight: 600; font-size: 0.9rem;">Monthly Technology Readers</p>
+                    </div>
+                    <div class="panel-box text-center">
+                        <h2 class="text-cyan" style="font-size: 2.2rem; font-weight: 800; margin-bottom: 4px;">85,000+</h2>
+                        <p class="text-muted" style="font-weight: 600; font-size: 0.9rem;">Newsletter Subscribers</p>
+                    </div>
+                    <div class="panel-box text-center">
+                        <h2 class="text-purple" style="font-size: 2.2rem; font-weight: 800; margin-bottom: 4px;">94%</h2>
+                        <p class="text-muted" style="font-weight: 600; font-size: 0.9rem;">C-Suite &amp; Senior Engineering Audience</p>
+                    </div>
+                </div>
+
+                <!-- Advertising Solutions -->
+                <section class="section-block">
+                    <div class="section-header">
+                        <h2><i data-lucide="layers" class="text-cyan"></i> Advertising &amp; Partnership Solutions</h2>
+                    </div>
+                    <div class="card-grid-3">
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="file-text" class="text-blue"></i> Sponsored Editorial</h3>
+                            <p class="text-muted" style="font-size:0.88rem; line-height:1.6; margin-bottom:12px;">High-impact thought leadership, case studies, and engineering deep dives published directly in our editorial feeds.</p>
+                            <span class="badge-tag">Native Feed Placement</span>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="mail" class="text-purple"></i> Newsletter Sponsorship</h3>
+                            <p class="text-muted" style="font-size:0.88rem; line-height:1.6; margin-bottom:12px;">Dedicated header and mid-roll sponsorships reaching senior executives and IT decision-makers daily.</p>
+                            <span class="badge-tag">High Open Rates</span>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="calendar" class="text-orange"></i> Webinars &amp; Events</h3>
+                            <p class="text-muted" style="font-size:0.88rem; line-height:1.6; margin-bottom:12px;">Co-host technical webinars, executive roundtables, and virtual security summits with full lead generation.</p>
+                            <span class="badge-tag">Lead Generation</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inquiry Form -->
+                <div class="panel-box" style="max-width:640px; margin:24px auto 48px;">
+                    <h3 class="panel-title"><i data-lucide="send"></i> Partnership &amp; Advertising Inquiry</h3>
+                    <form id="advertise-form" onsubmit="app.handleAdvertiseSubmission(event)" novalidate>
+                        <div class="form-group">
+                            <label for="adv-name">Full Name *</label>
+                            <input type="text" id="adv-name" class="form-control" required minlength="2" maxlength="80" placeholder="e.g. Alex Morgan">
+                        </div>
+                        <div class="form-group">
+                            <label for="adv-company">Company / Organization *</label>
+                            <input type="text" id="adv-company" class="form-control" required minlength="2" maxlength="100" placeholder="e.g. Acme Tech Solutions">
+                        </div>
+                        <div class="form-group">
+                            <label for="adv-email">Work Email Address *</label>
+                            <input type="email" id="adv-email" class="form-control" required maxlength="254" placeholder="alex@acmecorp.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="adv-package">Campaign Solution *</label>
+                            <select id="adv-package" class="form-control" required>
+                                <option value="">Select a solution</option>
+                                <option value="sponsored">Sponsored Editorial &amp; Articles</option>
+                                <option value="newsletter">Newsletter Sponsorship</option>
+                                <option value="display">Display &amp; Native Units</option>
+                                <option value="events">Webinars &amp; Event Sponsorship</option>
+                                <option value="custom">Custom Multi-Channel Campaign</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adv-budget">Estimated Budget Range</label>
+                            <select id="adv-budget" class="form-control">
+                                <option value="under_5k">$2,500 - $5,000</option>
+                                <option value="5k_15k">$5,000 - $15,000</option>
+                                <option value="15k_50k">$15,000 - $50,000</option>
+                                <option value="50k_plus">$50,000+</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adv-message">Campaign Objectives / Timeline</label>
+                            <textarea id="adv-message" class="form-control" rows="3" placeholder="Tell us about your audience goals, target regions, and proposed timeline..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Submit Advertising Inquiry</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
         <!-- ================= ADMIN REVIEW PANEL PAGE ================= -->
         <section id="page-admin" class="page-view">
             <div class="container">
@@ -914,7 +1035,7 @@
                     <ul>
                         <li><a href="#about-us" onclick="app.openLegalPage('about')">About Us</a></li>
                         <li><a href="#careers" onclick="app.navigateTo('careers')">Careers</a></li>
-                        <li><a href="javascript:void(0)">Advertise</a></li>
+                        <li><a href="#advertise" onclick="app.navigateTo('advertise')">Advertise</a></li>
                         <li><a href="#contact" onclick="app.navigateTo('contact')">Contact</a></li>
                     </ul>
                 </div>
@@ -964,12 +1085,12 @@
         <div class="ai-body" id="ai-body-content">
             <p class="ai-intro">Hello D. Phani Kumar. Select an AI tool or ask a question about current news intelligence:</p>
             <div class="ai-actions-grid">
-                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('summarize')"><i data-lucide="file-text"></i> Summarize</button>
-                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('takeaways')"><i data-lucide="list-checks"></i> Key Takeaways</button>
-                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('explain')"><i data-lucide="help-circle"></i> Explain Simply</button>
-                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('readAloud')"><i data-lucide="volume-2"></i> Read Aloud</button>
-                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('translate')"><i data-lucide="languages"></i> Translate</button>
-                <button class="btn btn-outline btn-sm" onclick="app.runAIFunction('recommend')"><i data-lucide="compass"></i> Recommend</button>
+                <button class="btn btn-outline btn-sm" id="btn-ai-summarize" onclick="app.runAIFunction('summarize', this)"><i data-lucide="file-text"></i> Summarize</button>
+                <button class="btn btn-outline btn-sm" id="btn-ai-takeaways" onclick="app.runAIFunction('takeaways', this)"><i data-lucide="list-checks"></i> Key Takeaways</button>
+                <button class="btn btn-outline btn-sm" id="btn-ai-explain" onclick="app.runAIFunction('explain', this)"><i data-lucide="help-circle"></i> Explain Simply</button>
+                <button class="btn btn-outline btn-sm" id="btn-ai-readAloud" onclick="app.runAIFunction('readAloud', this)"><i data-lucide="volume-2"></i> Read Aloud</button>
+                <button class="btn btn-outline btn-sm" id="btn-ai-translate" onclick="app.runAIFunction('translate', this)"><i data-lucide="languages"></i> Translate</button>
+                <button class="btn btn-outline btn-sm" id="btn-ai-recommend" onclick="app.runAIFunction('recommend', this)"><i data-lucide="compass"></i> Recommend</button>
             </div>
             <form class="ai-input-row" onsubmit="app.handleAIAsk(event)">
                 <label for="ai-ask-input" class="sr-only">Ask about today's news</label>

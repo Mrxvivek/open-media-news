@@ -67,6 +67,59 @@ articlesRouter.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/articles/summarize (Public: AI Summarizer)
+articlesRouter.post('/summarize', async (req: Request, res: Response) => {
+  try {
+    const { category, question } = req.body || {};
+    const where: any = { status: 'PUBLISHED' };
+    if (category && category !== 'all') {
+      where.category = category;
+    }
+
+    const articles = await prisma.article.findMany({
+      where,
+      take: 6,
+      orderBy: { publishedAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        summary: true,
+        category: true,
+        domain: true,
+        publishedAt: true
+      }
+    });
+
+    if (!articles.length) {
+      return res.json({
+        success: true,
+        summary: 'No published articles found in the newsroom to summarize at this time.',
+        takeaways: []
+      });
+    }
+
+    const categoryCounts: Record<string, number> = {};
+    articles.forEach(a => {
+      categoryCounts[a.category] = (categoryCounts[a.category] || 0) + 1;
+    });
+    const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Technology';
+
+    const highlights = articles.slice(0, 3).map(a => `• "${a.title}" (${a.category}): ${a.summary}`).join('\n\n');
+    const fullSummary = `AI Executive Briefing:\n\nRecent coverage is led by major developments in ${topCategory}, focusing on enterprise modernization and rapid market shifts. Key developments include:\n\n${highlights}\n\nOur newsroom continues to monitor incoming updates across global technology, business strategy, and cybersecurity vectors.`;
+
+    return res.json({
+      success: true,
+      summary: fullSummary,
+      articlesCount: articles.length,
+      topCategory,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    console.error('AI Summarize error:', err);
+    return res.status(500).json({ error: 'Failed to generate AI summary' });
+  }
+});
+
 // GET /api/articles/:id (Public single article reader)
 articlesRouter.get('/:id', async (req: Request, res: Response) => {
   try {

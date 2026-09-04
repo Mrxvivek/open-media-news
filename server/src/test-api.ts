@@ -240,6 +240,19 @@ async function runTests() {
     assert(allPublished, 'Public feed only includes status: PUBLISHED articles');
     const sampleArticleId = publicArticles.data.articles[0]?.id;
 
+    // 15b. AI Summarizer: POST /api/articles/summarize
+    const summarizeRes = await request('/articles/summarize', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Summarize the latest news' })
+    });
+    assert(
+      summarizeRes.status === 200 &&
+      summarizeRes.data.success === true &&
+      typeof summarizeRes.data.summary === 'string' &&
+      summarizeRes.data.summary.length > 0,
+      'AI Summarizer: POST /api/articles/summarize returns executive synthesis'
+    );
+
     // 16. Publisher creates new article
     const pubArticle = await request('/articles', {
       method: 'POST',
