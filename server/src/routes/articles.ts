@@ -31,11 +31,12 @@ articlesRouter.get('/', async (req: Request, res: Response) => {
       where.category = category;
     }
 
-    if (search && typeof search === 'string') {
+    if (search && typeof search === 'string' && search.trim()) {
+      const q = search.trim();
       where.OR = [
-        { title: { contains: search } },
-        { summary: { contains: search } },
-        { body: { contains: search } }
+        { title: { contains: q } },
+        { summary: { contains: q } },
+        { body: { contains: q } }
       ];
     }
 

@@ -24,6 +24,7 @@
             <div class="top-bar-left">
                 <span class="live-indicator"><span class="pulse-dot"></span><i data-lucide="radio-tower"></i><span class="live-label">LIVE UPDATES</span><span class="live-update-divider"></span><span id="live-update-message">Monitoring the global desk</span></span>
                 <span id="current-date"></span>
+                <span class="ist-clock" id="live-ist-clock"><i data-lucide="clock"></i> <span id="ist-clock-text">--:--:-- -- IST</span></span>
                 <span class="edition-tag">Global Edition</span>
             </div>
             <div class="top-bar-right">
@@ -36,20 +37,20 @@
     <!-- Main Navigation Header -->
     <header class="main-header" id="main-header">
         <div class="container header-inner">
-            <a href="#home" class="brand-logo" onclick="app.navigateTo('home')">
+            <a href="#home" class="brand-logo" onclick="event.preventDefault(); app.navigateTo('home')">
                 <div class="logo-icon"><i data-lucide="globe"></i></div>
                 <div class="logo-text">OPEN <span>MEDIA</span></div>
             </a>
 
             <nav class="desktop-nav" aria-label="Primary">
-                <a href="#home" class="nav-link" data-page="home">Home</a>
-                <a href="#foryou" id="nav-foryou" class="nav-link reader-only-nav" data-page="foryou" hidden>For You</a>
-                <a href="#business" class="nav-link" data-page="business">Business</a>
-                <a href="#tech" class="nav-link" data-page="tech">IT</a>
-                <a href="#cyber" class="nav-link" data-page="cyber">Cyber Security</a>
-                <a href="#ai" class="nav-link" data-page="ai">AI</a>
-                <a href="#publish" id="nav-publish" class="nav-link publisher-only-nav" data-page="publish" hidden>Publish</a>
-                <a href="#admin" id="nav-admin" class="nav-link admin-only-nav" data-page="admin" hidden>Admin Panel</a>
+                <a href="#home" class="nav-link" data-page="home" onclick="event.preventDefault(); app.navigateTo('home')">Home</a>
+                <a href="#foryou" id="nav-foryou" class="nav-link reader-only-nav" data-page="foryou" hidden onclick="event.preventDefault(); app.navigateTo('foryou')">For You</a>
+                <a href="#business" class="nav-link" data-page="business" onclick="event.preventDefault(); app.navigateTo('business')">Business</a>
+                <a href="#tech" class="nav-link" data-page="tech" onclick="event.preventDefault(); app.navigateTo('tech')">IT</a>
+                <a href="#cyber" class="nav-link" data-page="cyber" onclick="event.preventDefault(); app.navigateTo('cyber')">Cyber Security</a>
+                <a href="#ai" class="nav-link" data-page="ai" onclick="event.preventDefault(); app.navigateTo('ai')">AI</a>
+                <a href="#publish" id="nav-publish" class="nav-link publisher-only-nav" data-page="publish" hidden onclick="event.preventDefault(); app.navigateTo('publish')">Publish</a>
+                <a href="#admin" id="nav-admin" class="nav-link admin-only-nav" data-page="admin" hidden onclick="event.preventDefault(); app.navigateTo('admin')">Admin Panel</a>
             </nav>
 
             <div class="header-actions">
@@ -1024,19 +1025,19 @@
                 <div class="footer-col">
                     <h4>Categories</h4>
                     <ul>
-                        <li><a href="#tech" onclick="app.navigateTo('tech')">IT</a></li>
-                        <li><a href="#business" onclick="app.navigateTo('business')">Business</a></li>
-                        <li><a href="#cyber" onclick="app.navigateTo('cyber')">Cyber Security</a></li>
-                        <li><a href="#ai" onclick="app.navigateTo('ai')">AI</a></li>
+                        <li><a href="#business" onclick="event.preventDefault(); app.navigateTo('business')">Business</a></li>
+                        <li><a href="#tech" onclick="event.preventDefault(); app.navigateTo('tech')">IT</a></li>
+                        <li><a href="#cyber" onclick="event.preventDefault(); app.navigateTo('cyber')">Cyber Security</a></li>
+                        <li><a href="#ai" onclick="event.preventDefault(); app.navigateTo('ai')">AI</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
                     <h4>Company</h4>
                     <ul>
-                        <li><a href="#about-us" onclick="app.openLegalPage('about')">About Us</a></li>
-                        <li><a href="#careers" onclick="app.navigateTo('careers')">Careers</a></li>
-                        <li><a href="#advertise" onclick="app.navigateTo('advertise')">Advertise</a></li>
-                        <li><a href="#contact" onclick="app.navigateTo('contact')">Contact</a></li>
+                        <li><a href="#about-us" onclick="event.preventDefault(); app.openLegalPage('about')">About Us</a></li>
+                        <li><a href="#careers" onclick="event.preventDefault(); app.navigateTo('careers')">Careers</a></li>
+                        <li><a href="#advertise" onclick="event.preventDefault(); app.navigateTo('advertise')">Advertise</a></li>
+                        <li><a href="#contact" onclick="event.preventDefault(); app.navigateTo('contact')">Contact</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">

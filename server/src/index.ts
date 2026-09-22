@@ -4,6 +4,9 @@ import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { authenticateToken } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
 import { articlesRouter } from './routes/articles.js';
@@ -13,6 +16,10 @@ import { authorsRouter } from './routes/authors.js';
 import { eventsRouter } from './routes/events.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientPath = path.resolve(__dirname, '../../');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -91,9 +98,24 @@ app.use('/api/admin', adminRouter);
 app.use('/api/user', userRouter);
 app.use('/api/events', eventsRouter);
 
-// Global 404 handler for unmatched routes
+// Serve frontend static assets securely if present
+if (fs.existsSync(path.join(clientPath, 'index.html'))) {
+  app.use('/css', express.static(path.join(clientPath, 'css')));
+  app.use('/js', express.static(path.join(clientPath, 'js')));
+  app.get(['/', '/index.html'], (req, res) => {
+    res.sendFile(path.join(clientPath, 'index.html'));
+  });
+}
+
+// Global 404 / SPA fallback handler for unmatched routes
 app.use((req, res) => {
-  res.status(404).json({ error: `Cannot ${req.method} ${req.path}` });
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: `Cannot ${req.method} ${req.path}` });
+  }
+  if (fs.existsSync(path.join(clientPath, 'index.html'))) {
+    return res.sendFile(path.join(clientPath, 'index.html'));
+  }
+  return res.status(404).json({ error: `Cannot ${req.method} ${req.path}` });
 });
 
 // Global Error Handler

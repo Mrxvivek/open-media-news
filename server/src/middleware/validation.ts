@@ -109,7 +109,7 @@ export const createEventSchema = z.object({
   location: z.string().trim().min(1, 'Event location is required'),
   eventDate: z.string().trim().min(1, 'Event date is required'),
   imageUrl: z.string().trim().optional(),
-  organizerId: z.string().trim().min(1, 'Organizer ID is required')
+  organizerId: z.string().trim().min(1).optional().nullable()
 });
 
 export const updateEventStatusSchema = z.object({

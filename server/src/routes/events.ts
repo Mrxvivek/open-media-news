@@ -29,7 +29,7 @@ eventsRouter.post('/', requireRole(['PUBLISHER', 'ADMIN']), validateBody(createE
   try {
     const { title, description, category, location, eventDate, imageUrl, organizerId } = req.body;
 
-    const organizerIdValue = organizerId || req.user!.id;
+    const organizerIdValue = (req.user!.role === 'ADMIN' && organizerId) ? organizerId : req.user!.id;
     const event = await prisma.event.create({
       data: {
         title: title.trim(),
@@ -47,6 +47,7 @@ eventsRouter.post('/', requireRole(['PUBLISHER', 'ADMIN']), validateBody(createE
     emitRealtime('event:submitted', {
       id: event.id,
       title: event.title,
+      organizer: event.organizer,
       event: event
     });
 

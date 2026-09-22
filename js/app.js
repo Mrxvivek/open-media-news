@@ -266,9 +266,42 @@ class GlobalCoverageApp {
   }
 
   renderDate() {
-    const el = document.getElementById('current-date');
-    if (el) {
-      el.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    this.startLiveClock();
+  }
+
+  startLiveClock() {
+    const updateClock = () => {
+      const now = new Date();
+      const dateEl = document.getElementById('current-date');
+      const clockText = document.getElementById('ist-clock-text');
+
+      // IST format: Asia/Kolkata timezone with 12-hour AM/PM
+      const istTimeStr = now.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+
+      const istDateStr = now.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Kolkata',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      if (clockText) {
+        clockText.textContent = `${istTimeStr} IST`;
+      }
+      if (dateEl) {
+        dateEl.textContent = istDateStr;
+      }
+    };
+    updateClock();
+    if (!this.liveClockTimer) {
+      this.liveClockTimer = setInterval(updateClock, 1000);
     }
   }
 
@@ -1567,13 +1600,20 @@ class GlobalCoverageApp {
     const targetPage = document.getElementById(`page-${pageId}`);
     if (targetPage) {
       targetPage.classList.add('active');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      this.refreshIcons(targetPage);
     }
 
     document.querySelectorAll(`[data-page="${pageId}"]`).forEach(el => el.classList.add('active'));
 
     if (pushHash && location.hash !== `#${pageId}`) {
       history.pushState(null, '', `#${pageId}`);
+    }
+
+    if (pageId === 'ai') {
+      this.renderAIPage();
     }
 
     if (pageId === 'admin') {
@@ -1611,9 +1651,9 @@ class GlobalCoverageApp {
       if (e.key === 'Escape') {
         this.closeAllModals();
       }
-      if (document.getElementById('page-home').classList.contains('active') && document.getElementById('magazine-flip-card')) {
-        if (e.key === 'ArrowRight') this.nextTrendingStory(true);
-        if (e.key === 'ArrowLeft') this.prevTrendingStory(true);
+      if (document.getElementById('page-home')?.classList.contains('active')) {
+        if (e.key === 'ArrowRight') this.nextHeroStory(true);
+        if (e.key === 'ArrowLeft') this.prevHeroStory(true);
       }
       if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) {
         e.preventDefault();
@@ -1633,25 +1673,32 @@ class GlobalCoverageApp {
     });
   }
 
-  // --- Homepage Hero + Magazine Flipbook ---
+  // --- Homepage Hero Carousel + Side Trending Panel ---
   renderHero() {
-    const hero = this.getHomeHeroStories()[this.currentHeroIndex];
+    const heroes = this.getHomeHeroStories();
+    const hero = heroes[this.currentHeroIndex] || heroes[0];
     const container = document.getElementById('hero-main-card');
     if (!container || !hero) return;
     const catSlug = this.categorySlug(hero.category);
     const user = this.getCurrentUser();
 
     container.innerHTML = `
-      <div class="hero-image-box">
+      <div class="hero-image-box" id="hero-image-box">
         <img src="${hero.image}" alt="${hero.title}" loading="eager">
       </div>
-      <span class="category-tag cat-${catSlug}" style="position:absolute; top:22px; left:24px; z-index:2;">${hero.category}</span>
-      <div class="hero-body">
-        <h1 class="hero-title">${hero.title}</h1>
+      <div class="hero-top-bar">
+        <span class="category-tag cat-${catSlug}">${hero.category}</span>
+        <div class="hero-top-right">
+          <span class="hero-live-badge"><span></span> Live Pulse</span>
+          <span class="hero-page-count" id="hero-page-count">${String(this.currentHeroIndex + 1).padStart(2, '0')} / ${String(heroes.length).padStart(2, '0')}</span>
+        </div>
+      </div>
+      <div class="hero-body" id="hero-body-content">
+        <h1 class="hero-title" onclick="app.openArticleModal('${hero.id}')" style="cursor:pointer;" title="Read full story">${hero.title}</h1>
         <p class="hero-desc">${hero.description}</p>
         <div class="hero-meta-row">
           <span>By <b>${hero.author}</b> · ${hero.readTime || ''} · Updated ${hero.published}</span>
-          <div>
+          <div class="hero-actions">
             ${user ? `
             <button class="icon-btn" onclick="app.toggleSaveArticle('${hero.id}', event)" title="Save" aria-label="Save story">
               <i data-lucide="${this.isSaved(hero.id) ? 'bookmark-check' : 'bookmark'}"></i>
@@ -1662,203 +1709,194 @@ class GlobalCoverageApp {
           </div>
         </div>
       </div>
+      <div class="hero-carousel-controls">
+        <button class="hero-nav-btn" onclick="app.prevHeroStory(true)" aria-label="Previous story">
+          <i data-lucide="arrow-left"></i> Previous
+        </button>
+        <div class="hero-dots">
+          ${heroes.map((_, i) => `<button class="hero-dot ${i === this.currentHeroIndex ? 'active' : ''}" onclick="app.goToHeroStory(${i})" aria-label="Go to story ${i + 1}"></button>`).join('')}
+        </div>
+        <button class="hero-nav-btn" onclick="app.nextHeroStory(true)" aria-label="Next story">
+          Next <i data-lucide="arrow-right"></i>
+        </button>
+      </div>
     `;
 
-    this.renderTrendingFlipbook();
+    this.setupHeroSwipe();
+    this.setupHeroHoverPause();
+    this.renderSideTrendingPanel();
     this.renderEditorPicks();
     this.refreshIcons(container);
   }
 
-  renderTrendingFlipbook() {
-    const stories = this.getHomeTrending();
-    const story = stories[this.currentTrendingIndex];
-    const card = document.getElementById('magazine-flip-card');
-    if (!card || !story) return;
+  flipHeroToStory(newIndex, direction) {
+    const heroes = this.getHomeHeroStories();
+    const hero = heroes[newIndex];
+    const container = document.getElementById('hero-main-card');
+    if (!container || !hero) return;
 
-    card.innerHTML = `
-      <div class="magazine-flip-header">
-        <span class="eyebrow"><i data-lucide="radio-tower"></i> Trending News</span>
-        <span class="magazine-page-count">${String(this.currentTrendingIndex + 1).padStart(2, '0')} / ${String(stories.length).padStart(2, '0')}</span>
-      </div>
-      <div class="magazine-flip-stage" id="magazine-flip-stage">
-        <div class="magazine-page trending-page" data-category="${this.categorySlug(story.category)}">
-          ${this.trendingPageHTML(story)}
-        </div>
-      </div>
-      <div class="magazine-flip-controls">
-        <button class="btn btn-outline btn-sm" onclick="app.prevTrendingStory(true)" ${this.currentTrendingIndex === 0 ? 'disabled' : ''} aria-label="Previous trending story"><i data-lucide="arrow-left"></i> Previous</button>
-        <div class="magazine-dots">
-          ${stories.map((_, i) => `<button class="magazine-dot ${i === this.currentTrendingIndex ? 'active' : ''}" onclick="app.goToTrendingStory(${i})" aria-label="Go to trending story ${i + 1}"></button>`).join('')}
-        </div>
-        <button class="btn btn-outline btn-sm" onclick="app.nextTrendingStory(true)" ${this.currentTrendingIndex === stories.length - 1 ? 'disabled' : ''} aria-label="Next trending story">Next <i data-lucide="arrow-right"></i></button>
-      </div>
-    `;
+    this.currentHeroIndex = newIndex;
+    const catSlug = this.categorySlug(hero.category);
+    const user = this.getCurrentUser();
 
-    this.setupTrendingSwipe();
-    this.refreshIcons(card);
+    const imgBox = container.querySelector('.hero-image-box');
+    const heroBody = container.querySelector('#hero-body-content');
+    const topBar = container.querySelector('.hero-top-bar');
+
+    if (imgBox && heroBody) {
+      imgBox.style.opacity = '0.2';
+      heroBody.style.opacity = '0';
+      heroBody.style.transform = `translateX(${direction > 0 ? '16px' : '-16px'})`;
+
+      setTimeout(() => {
+        imgBox.innerHTML = `<img src="${hero.image}" alt="${hero.title}" loading="eager">`;
+        if (topBar) {
+          topBar.innerHTML = `
+            <span class="category-tag cat-${catSlug}">${hero.category}</span>
+            <div class="hero-top-right">
+              <span class="hero-live-badge"><span></span> Live Pulse</span>
+              <span class="hero-page-count" id="hero-page-count">${String(newIndex + 1).padStart(2, '0')} / ${String(heroes.length).padStart(2, '0')}</span>
+            </div>
+          `;
+        }
+        heroBody.innerHTML = `
+          <h1 class="hero-title" onclick="app.openArticleModal('${hero.id}')" style="cursor:pointer;" title="Read full story">${hero.title}</h1>
+          <p class="hero-desc">${hero.description}</p>
+          <div class="hero-meta-row">
+            <span>By <b>${hero.author}</b> · ${hero.readTime || ''} · Updated ${hero.published}</span>
+            <div class="hero-actions">
+              ${user ? `
+              <button class="icon-btn" onclick="app.toggleSaveArticle('${hero.id}', event)" title="Save" aria-label="Save story">
+                <i data-lucide="${this.isSaved(hero.id) ? 'bookmark-check' : 'bookmark'}"></i>
+              </button>` : ''}
+              <button class="icon-btn" onclick="app.openArticleModal('${hero.id}')" title="Read Full" aria-label="Read full story">
+                <i data-lucide="maximize-2"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        container.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === newIndex));
+
+        imgBox.style.opacity = '1';
+        heroBody.style.opacity = '1';
+        heroBody.style.transform = 'translateX(0)';
+        this.refreshIcons(container);
+      }, 220);
+    } else {
+      this.renderHero();
+    }
   }
 
-  trendingPageHTML(story) {
-    return `<div class="trending-page-image">
-      <img src="${story.image}" alt="" loading="eager">
-      <div class="trending-icon-scene" aria-hidden="true">
-        <span class="trending-orbit orbit-one"></span><span class="trending-orbit orbit-two"></span>
-        <span class="trending-icon-3d"><i data-lucide="${this.trendingIcon(story.category)}"></i></span>
-      </div>
-      <span class="category-tag cat-${this.categorySlug(story.category)}">${story.category}</span>
-      <span class="trending-live-badge"><span></span> Live pulse</span>
-    </div><div class="trending-page-body">
-      <span class="trending-page-kicker">${story.time} · Global desk</span>
-      <h4>${story.title}</h4>
-      <button class="trending-read-button" onclick="app.showToast('Full story reader coming soon.')">Read story <i data-lucide="arrow-up-right"></i></button>
-    </div>`;
+  nextHeroStory(userTriggered) {
+    const total = this.getHomeHeroStories().length;
+    const nextIdx = (this.currentHeroIndex + 1) % total;
+    this.flipHeroToStory(nextIdx, 1);
+    if (userTriggered) this.restartHeroAutoRotate();
   }
 
-  setupTrendingSwipe() {
-    const stage = document.getElementById('magazine-flip-stage');
-    if (!stage) return;
+  prevHeroStory(userTriggered) {
+    const total = this.getHomeHeroStories().length;
+    const prevIdx = (this.currentHeroIndex - 1 + total) % total;
+    this.flipHeroToStory(prevIdx, -1);
+    if (userTriggered) this.restartHeroAutoRotate();
+  }
+
+  goToHeroStory(index) {
+    if (index === this.currentHeroIndex) return;
+    this.flipHeroToStory(index, index > this.currentHeroIndex ? 1 : -1);
+    this.restartHeroAutoRotate();
+  }
+
+  setupHeroSwipe() {
+    const card = document.getElementById('hero-main-card');
+    if (!card || card.dataset.swipeInitialized) return;
+    card.dataset.swipeInitialized = 'true';
     let startX = 0;
-    stage.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-    stage.addEventListener('touchend', (e) => {
+    card.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+    card.addEventListener('touchend', (e) => {
       const dx = e.changedTouches[0].clientX - startX;
       if (Math.abs(dx) > 40) {
-        if (dx < 0) this.nextTrendingStory(true); else this.prevTrendingStory(true);
+        if (dx < 0) this.nextHeroStory(true); else this.prevHeroStory(true);
       }
     }, { passive: true });
   }
 
-  flipTrendingToPage(newIndex, direction) {
-    const stage = document.getElementById('magazine-flip-stage');
-    const stories = this.getHomeTrending();
-    const story = stories[newIndex];
-    if (!stage || !story) return;
-    const old = stage.querySelector('.magazine-page');
-    const incoming = document.createElement('div');
-    incoming.className = 'magazine-page trending-page';
-    incoming.style.transform = `rotateY(${direction > 0 ? 90 : -90}deg) scale(.96)`;
-    incoming.style.opacity = '0';
-    incoming.dataset.category = this.categorySlug(story.category);
-    incoming.innerHTML = this.trendingPageHTML(story);
-    stage.appendChild(incoming);
-    requestAnimationFrame(() => {
-      incoming.style.transform = 'rotateY(0deg) scale(1)';
-      incoming.style.opacity = '1';
-      if (old) {
-        old.style.transform = `rotateY(${direction > 0 ? -90 : 90}deg) scale(.96)`;
-        old.style.opacity = '0';
-      }
-    });
-    setTimeout(() => { if (old) old.remove(); }, 650);
-    this.currentTrendingIndex = newIndex;
-    const header = document.querySelector('#magazine-flip-card .magazine-page-count');
-    if (header) header.textContent = `${String(newIndex + 1).padStart(2, '0')} / ${String(stories.length).padStart(2, '0')}`;
-    document.querySelectorAll('#magazine-flip-card .magazine-dot').forEach((dot, index) => dot.classList.toggle('active', index === newIndex));
-    const [prevButton, nextButton] = document.querySelectorAll('#magazine-flip-card .magazine-flip-controls .btn');
-    if (prevButton) prevButton.disabled = newIndex === 0;
-    if (nextButton) nextButton.disabled = newIndex === stories.length - 1;
-    this.refreshIcons(stage);
-  }
-
-  nextTrendingStory(userTriggered) {
-    const total = this.getHomeTrending().length;
-    if (this.currentTrendingIndex < total - 1) this.flipTrendingToPage(this.currentTrendingIndex + 1, 1);
-    else this.goToTrendingStory(0, 1);
-    if (userTriggered) this.restartTrendingAutoRotate();
-  }
-
-  prevTrendingStory(userTriggered) {
-    if (this.currentTrendingIndex > 0) this.flipTrendingToPage(this.currentTrendingIndex - 1, -1);
-    if (userTriggered) this.restartTrendingAutoRotate();
-  }
-
-  goToTrendingStory(index, direction) {
-    if (index === this.currentTrendingIndex) return;
-    this.flipTrendingToPage(index, direction || (index > this.currentTrendingIndex ? 1 : -1));
-    this.restartTrendingAutoRotate();
-  }
-
-  startTrendingAutoRotate() {
-    this.trendingRotateTimer = setInterval(() => {
-      if (this.currentPage === 'home') this.nextTrendingStory(false);
-    }, 6200);
-  }
-
-  restartTrendingAutoRotate() {
-    clearInterval(this.trendingRotateTimer);
-    this.startTrendingAutoRotate();
-  }
-
-  flipToPage(newIndex, direction) {
-    const stage = document.getElementById('magazine-flip-stage');
-    const hero = this.getHomeHeroStories()[this.currentHeroIndex];
-    if (!hero || !hero.pages || !hero.pages[newIndex]) return;
-    const page = hero.pages[newIndex];
-    const old = stage.querySelector('.magazine-page');
-
-    const incoming = document.createElement('div');
-    incoming.className = 'magazine-page';
-    incoming.style.transform = `rotateY(${direction > 0 ? 90 : -90}deg)`;
-    incoming.style.opacity = '0';
-    incoming.innerHTML = `<h4>${page.title}</h4><p>${page.content}</p>`;
-    stage.appendChild(incoming);
-
-    requestAnimationFrame(() => {
-      incoming.style.transform = 'rotateY(0deg)';
-      incoming.style.opacity = '1';
-      if (old) {
-        old.style.transform = `rotateY(${direction > 0 ? -90 : 90}deg)`;
-        old.style.opacity = '0';
-      }
-    });
-    setTimeout(() => { if (old) old.remove(); }, 500);
-
-    this.currentHeroPage = newIndex;
-    document.getElementById('magazine-page-count') && null;
-    const header = document.querySelector('#magazine-flip-card .magazine-flip-header .magazine-page-count');
-    if (header) header.textContent = `${String(newIndex + 1).padStart(2, '0')} / ${String(hero.pages.length).padStart(2, '0')}`;
-    document.querySelectorAll('.magazine-dot').forEach((d, i) => d.classList.toggle('active', i === newIndex));
-    const [prevBtn, nextBtn] = document.querySelectorAll('.magazine-flip-controls .btn');
-    if (prevBtn) prevBtn.disabled = newIndex === 0;
-    if (nextBtn) nextBtn.disabled = newIndex === hero.pages.length - 1;
-  }
-
-  nextHeroPage(userTriggered) {
-    const hero = this.getHomeHeroStories()[this.currentHeroIndex];
-    if (hero && hero.pages && this.currentHeroPage < hero.pages.length - 1) {
-      this.flipToPage(this.currentHeroPage + 1, 1);
-    } else {
-      this.advanceHeroStory(userTriggered);
-      return;
-    }
-    if (userTriggered) this.restartHeroAutoRotate();
-  }
-
-  prevHeroPage(userTriggered) {
-    if (this.currentHeroPage > 0) {
-      this.flipToPage(this.currentHeroPage - 1, -1);
-    }
-    if (userTriggered) this.restartHeroAutoRotate();
-  }
-
-  advanceHeroStory(userTriggered) {
-    const totalHeroes = this.getHomeHeroStories().length;
-    this.currentHeroIndex = (this.currentHeroIndex + 1) % totalHeroes;
-    this.currentHeroPage = 0;
-    this.renderHero();
-    if (userTriggered) this.restartHeroAutoRotate();
+  setupHeroHoverPause() {
+    const card = document.getElementById('hero-main-card');
+    if (!card || card.dataset.hoverInitialized) return;
+    card.dataset.hoverInitialized = 'true';
+    card.addEventListener('mouseenter', () => clearInterval(this.aiHeroRotateTimer));
+    card.addEventListener('mouseleave', () => this.startHeroAutoRotate());
   }
 
   startHeroAutoRotate() {
+    clearInterval(this.aiHeroRotateTimer);
     this.aiHeroRotateTimer = setInterval(() => {
-      if (this.currentPage !== 'home') return;
-      this.advanceHeroStory(false);
-    }, 7500);
+      if (this.currentPage === 'home') this.nextHeroStory(false);
+    }, 7000);
   }
 
   restartHeroAutoRotate() {
     clearInterval(this.aiHeroRotateTimer);
     this.startHeroAutoRotate();
   }
+
+  renderSideTrendingPanel() {
+    const stories = this.getHomeTrending();
+    const card = document.getElementById('magazine-flip-card');
+    if (!card || !stories.length) return;
+
+    const topTrending = stories.slice(0, 4);
+
+    card.className = 'magazine-flip-card side-trending-card';
+    card.innerHTML = `
+      <div class="side-trending-header">
+        <span class="eyebrow"><i data-lucide="radio-tower"></i> Trending News</span>
+        <span class="side-trending-badge"><span></span> LIVE</span>
+      </div>
+      <div class="side-trending-list">
+        ${topTrending.map((story, i) => `
+          <div class="side-trending-item" onclick="app.showTrendingStoryModal('${story.id}')" tabindex="0" role="button" aria-label="${story.title}">
+            <span class="side-trending-rank">${String(i + 1).padStart(2, '0')}</span>
+            <div class="side-trending-content">
+              <span class="category-tag cat-${this.categorySlug(story.category)}">${story.category}</span>
+              <h4 class="side-trending-title">${story.title}</h4>
+              <span class="side-trending-meta">${story.time} · Global Desk</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="side-trending-footer">
+        <a href="javascript:void(0)" class="side-trending-link" onclick="document.getElementById('trending-container')?.scrollIntoView({behavior:'smooth'})">
+          View all trending stories <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    `;
+
+    this.refreshIcons(card);
+  }
+
+  showTrendingStoryModal(storyId) {
+    const stories = this.getHomeTrending();
+    const story = stories.find(s => s.id === storyId);
+    if (!story) return;
+    const article = this.getHomeArticles().find(a => a.title === story.title || a.id === story.id);
+    if (article) {
+      this.openArticleModal(article.id);
+    } else {
+      this.openArticleModal(story.id);
+    }
+  }
+
+  // Compatibility aliases
+  renderTrendingFlipbook() { this.renderSideTrendingPanel(); }
+  nextTrendingStory(userTriggered) { this.nextHeroStory(userTriggered); }
+  prevTrendingStory(userTriggered) { this.prevHeroStory(userTriggered); }
+  goToTrendingStory(index) { this.goToHeroStory(index); }
+  startTrendingAutoRotate() {}
+  restartTrendingAutoRotate() {}
+  advanceHeroStory(userTriggered) { this.nextHeroStory(userTriggered); }
 
   renderEditorPicks() {
     const strip = document.getElementById('editor-picks-strip');
@@ -2067,9 +2105,11 @@ class GlobalCoverageApp {
           <span class="event-type-tag">${e.type || 'Webinar'}</span>
         </div>
         <div class="webinar-card-body event-card-body">
-          <span class="webinar-date event-date">${e.date} · ${e.time || ''}</span>
-          <h4 class="webinar-title event-title">${e.title}</h4>
-          <p class="webinar-speaker event-speaker">Speaker: ${e.speaker} · ${e.organization || ''}</p>
+          <div class="event-card-content">
+            <span class="webinar-date event-date">${e.date} · ${e.time || ''}</span>
+            <h4 class="webinar-title event-title">${e.title}</h4>
+            <p class="webinar-speaker event-speaker">Speaker: ${e.speaker} · ${e.organization || ''}</p>
+          </div>
           <button class="btn btn-primary btn-sm webinar-btn" onclick="app.openEventModal('${e.id}')">Register Now</button>
         </div>
       </div>
@@ -2423,7 +2463,26 @@ class GlobalCoverageApp {
 
   // --- Article Reader Modal ---
   findArticle(id) {
-    return GC_DATA.articles.find(a => a.id === id) || GC_DATA.heroStories.find(h => h.id === id);
+    const article = GC_DATA.articles.find(a => a.id === id) || GC_DATA.heroStories.find(h => h.id === id);
+    if (article) return article;
+    const trending = GC_DATA.trending ? GC_DATA.trending.find(t => t.id === id) : null;
+    if (trending) {
+      return {
+        id: trending.id,
+        title: trending.title,
+        summary: `${trending.title}. Continuous coverage and intelligence briefing from the OPEN MEDIA editorial desk.`,
+        description: `${trending.title}. Continuous coverage and intelligence briefing from the OPEN MEDIA editorial desk.`,
+        body: `<p>${trending.title}</p><p>Security, technology and market indicators are shifting rapidly. OPEN MEDIA correspondents are following this developing story across our global bureaus.</p>`,
+        category: trending.category,
+        domain: trending.category,
+        author: 'Global Desk',
+        published: trending.time,
+        date: trending.time,
+        readTime: '3 min read',
+        image: trending.image
+      };
+    }
+    return null;
   }
 
   async openArticleModal(id) {
@@ -2895,14 +2954,67 @@ class GlobalCoverageApp {
   }
 
   localAIAnswer(question) {
-    const query = question.toLowerCase();
-    const matches = this.aiContext().filter(article => `${article.title} ${article.summary} ${article.category} ${article.domain}`.toLowerCase().includes(query) || query.split(/\s+/).some(word => word.length > 3 && `${article.title} ${article.summary} ${article.category} ${article.domain}`.toLowerCase().includes(word))).slice(0, 3);
-    if (/recommend|read next|suggest/.test(query)) {
-      return `Based on the current desk, start with ${this.aiContext().slice(0, 3).map(article => `“${article.title}”`).join(', ')}. These stories cover the strongest mix of AI, infrastructure, and enterprise impact.`;
+    const query = question.toLowerCase().trim();
+    const context = this.aiContext();
+
+    // 1. Summarize intent
+    if (/summarize|executive summary|briefing|summary|overview/.test(query) || query === 'summarize') {
+      const topStories = context.slice(0, 4);
+      return `**Executive Intelligence Briefing**:\n\n` +
+        `• **Technology & AI**: ${topStories[0]?.title || 'Frontier AI developments continue to accelerate across enterprise sectors.'} — ${topStories[0]?.summary || ''}\n\n` +
+        `• **Cybersecurity & Threat Defense**: ${topStories[1]?.title || 'Threat intelligence teams monitor critical infrastructure vectors.'} — ${topStories[1]?.summary || ''}\n\n` +
+        `• **Enterprise & Markets**: ${topStories[2]?.title || 'Corporate investments and hardware scaling lead industry announcements.'} — ${topStories[2]?.summary || ''}\n\n` +
+        `*Synthesized across ${context.length} current newsroom intelligence reports.*`;
     }
-    if (!matches.length) return 'I could not find a close match in the loaded newsroom. Try a topic such as “AI safety”, “ransomware”, “cloud”, or “earnings”.';
-    if (/takeaway|key point/.test(query)) return matches.map((article, index) => `${index + 1}. ${article.title}: ${article.summary}`).join('\n');
-    return matches.map(article => `“${article.title}” (${article.category}, ${article.date})\n${article.summary}`).join('\n\n');
+
+    // 2. Key Takeaways intent
+    if (/takeaway|key point|bullet|highlights/.test(query) || query.includes('takeaways')) {
+      const top = context.slice(0, 3);
+      return `**Key Intelligence Takeaways**:\n\n` +
+        top.map((art, i) => `${i + 1}. **${art.title}**\n   ${art.summary}`).join('\n\n');
+    }
+
+    // 3. Explain Simply intent
+    if (/explain|simple|beginner|plain/.test(query) || query.includes('explain')) {
+      const art = context[0];
+      return `**In Simple Terms**:\n\n` +
+        `Today's major headline is **"${art?.title || 'technology and security updates'}"**.\n\n` +
+        `In plain language, governments and leading technology companies are setting up unified safety guardrails and software updates to keep artificial intelligence and computer networks safe. At the same time, businesses are doubling their budgets for automated tools that can handle operations faster.\n\n` +
+        `Context: ${art?.summary || 'New international agreements and technologies are being deployed to balance rapid innovation with enterprise safety.'}`;
+    }
+
+    // 4. Translate intent
+    if (/translate|hindi|bhasha|anuvad/.test(query) || query.includes('translate')) {
+      const top = context.slice(0, 3);
+      return `**मुख्य समाचार सारांश (Hindi Intelligence Briefing)**:\n\n` +
+        `1. **${top[0]?.title || 'प्रौद्योगिकी समाचार'}**: वैश्विक तकनीकी मंचों पर कृत्रिम बुद्धिमत्ता (AI) के सुरक्षा मानकों और नए नियमों पर सहमति बन रही है।\n\n` +
+        `2. **${top[1]?.title || 'साइबर सुरक्षा'}**: औद्योगिक नेटवर्किंग और बुनियादी ढांचे में संभावित साइबर सुरक्षा खतरों के खिलाफ सुरक्षात्मक उपाय किए जा रहे हैं।\n\n` +
+        `3. **${top[2]?.title || 'बाज़ार और व्यापार'}**: एंटरप्राइज ऑटोमेशन और नई तकनीकों में कॉरपोरेट निवेश तेज़ी से बढ़ रहा है।`;
+    }
+
+    // 5. Recommend intent
+    if (/recommend|read next|suggest|what to read/.test(query) || query.includes('recommend')) {
+      return `**Recommended Reading from the Newsroom**:\n\n` +
+        context.slice(0, 3).map((article, i) => `${i + 1}. **${article.title}** (${article.category} · ${article.domain})\n   *Why read*: ${article.summary}`).join('\n\n');
+    }
+
+    // 6. Read aloud intent
+    if (/read aloud|audio|listen|spoken/.test(query) || query.includes('read aloud')) {
+      const top = context.slice(0, 2);
+      return `Here is your OPEN MEDIA briefing. First: ${top[0]?.title}. ${top[0]?.summary} Second: ${top[1]?.title}. ${top[1]?.summary} That concludes your executive update.`;
+    }
+
+    // 7. General keyword search across articles
+    const matches = context.filter(article =>
+      `${article.title} ${article.summary} ${article.category} ${article.domain}`.toLowerCase().includes(query) ||
+      query.split(/\s+/).some(word => word.length > 3 && `${article.title} ${article.summary} ${article.category} ${article.domain}`.toLowerCase().includes(word))
+    ).slice(0, 3);
+
+    if (matches.length) {
+      return matches.map((article, i) => `${i + 1}. **${article.title}** (${article.category} · ${article.date})\n${article.summary}`).join('\n\n');
+    }
+
+    return `I searched the newsroom for "${question}". While an exact match wasn't found, our top stories right now cover **AI governance**, **cloud infrastructure**, **zero-day cyber alerts**, and **enterprise funding**. Try asking about one of these topics!`;
   }
 
   handleAIAsk(e) {
