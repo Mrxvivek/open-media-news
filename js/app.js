@@ -3,6 +3,8 @@
  * Single Page Application routing, magazine reader, reactive storage, search & AI.
  */
 
+const APPROVED_CATEGORIES = ['Business', 'IT', 'Cyber Security', 'AI'];
+const NON_ENGLISH_REGEX = /[\u0C00-\u0C7F\u0900-\u0D7F\u0E00-\u0E7F\u3040-\u30FF\u4E00-\u9FFF\u0600-\u06FF]/;
 const CAT_MAP = { tech: 'IT', business: 'Business', cyber: 'Cyber Security', ai: 'AI' };
 const VALID_PAGES = ['home', 'foryou', 'business', 'tech', 'cyber', 'ai', 'publish', 'admin', 'careers', 'contact', 'advertise'];
 
@@ -72,10 +74,50 @@ const BUSINESS_DOMAIN_MATCH = {
   'New Offices': 'Expansion'
 };
 
+const DOMAIN_KEYWORDS = {
+  // Business Pillar Domains
+  'Companies': /\b(company|companies|corporation|corporate|retailer|manufacturer|firm|conglomerate|brand|industry|consumer|product launch|commercial|business|store|stores|operations|apple|google|amazon|microsoft|tesla|meta|walmart|reliance|tata)\b/i,
+  'Earnings': /\b(earning|earnings|revenue|profit|profits|quarterly|quarter|q[1-4]|fiscal|results|guidance|shares|stock|stocks|stock market|wall street|valuation|dividend|margins|balance sheet|sales|financial|nasdaq|s&p|sensex|nifty|market cap)\b/i,
+  'M&A': /\b(m&a|merger|mergers|acquire|acquires|acquired|acquisition|acquisitions|deal|deals|buyout|takeover|joint venture|alliance|purchase|bought|bid|bidding)\b/i,
+  'Strategy': /\b(strategy|strategic|transformation|compete|competition|pivot|restructuring|innovation|plan|plans|overhaul|outlook|future|roadmap|initiative|reorganize)\b/i,
+  'Leadership': /\b(ceo|cfo|cto|coo|chief executive|executive|executives|board|founder|founders|leadership|director|directors|appointed|appoints|resigns|resigned|steps down|management|chair|chairman|oust|ousted)\b/i,
+  'Expansion': /\b(expansion|expand|expands|expanding|growth|new market|new markets|global|nationwide|facility|offices|hiring|scaling|rollout|entry|enter|international)\b/i,
+  'Partnerships': /\b(partnership|partnerships|partner|partners|partnering|collaboration|collaborate|collaborating|agreement|pact|tie-up|alliance|consortium|deal with)\b/i,
+
+  // IT & Technology Pillar Domains
+  'Artificial Intelligence': /\b(ai|artificial intelligence|generative ai|genai|llm|llms|chatgpt|openai|anthropic|claude|gemini|deepseek|machine learning|deep learning|copilot|model|neural|autonomous|agent|agents)\b/i,
+  'Cloud Computing': /\b(cloud|aws|amazon web services|azure|microsoft azure|google cloud|data center|data centers|datacenter|datacenters|kubernetes|docker|container|server|servers|multi-cloud|infrastructure|hosting|devops|cloud platform)\b/i,
+  'Semiconductors': /\b(semiconductor|semiconductors|chip|chips|nvidia|intel|amd|tsmc|qualcomm|arm|hardware|processor|processors|gpu|gpus|cpu|cpus|foundry|foundries|silicon|packaging|transistor|microchip|export rules|wafer)\b/i,
+  'Enterprise IT': /\b(enterprise it|enterprise|it infrastructure|modernization|cio|cto|mainframe|legacy|database|databases|software|network|networking|sysadmin|architecture|erp|systems|it systems|outage|telecom|fiber|5g|6g|it spending)\b/i,
+  'Startups': /\b(startup|startups|venture|ventures|vc|vcs|funding|fundraise|seed|series a|series b|series c|raised|founder|founders|unicorn|unicorns|valuation|accelerator|incubator|pitch)\b/i,
+  'SaaS': /\b(saas|software as a service|subscription|b2b|platform|cloud software|license|licensing|seats|crm|tooling|productivity tool|enterprise app)\b/i,
+  'FinTech': /\b(fintech|payments|payment|banking|bank|crypto|cryptocurrency|bitcoin|blockchain|digital finance|wallet|transaction|transactions|lending|defi|embedded finance|upi|finances)\b/i,
+
+  // Cyber Security Pillar Domains
+  'Critical': /\b(critical|urgent|alert|alerts|emergency|severe|severity|cvss|high severity|advisory|breach|exploited|remote code execution|rce|patch now|immediate|zero-day|cve|active exploitation)\b/i,
+  'Global Attacks': /\b(attack|attacks|attacker|attackers|global attack|cyberattack|cyberattacks|campaign|nation-state|apt|apt[0-9]+|intrusion|threat actor|threat actors|espionage|china|russia|iran|north korea|targeted|sabotage|ddos)\b/i,
+  'Zero-Day': /\b(zero-day|zero day|0-day|unpatched|cve|cve-[0-9-]+|exploit|exploits|vulnerability|vulnerabilities|flaw|flaws|bug|proof of concept|poc|patch tuesday|security flaw|patch|fix)\b/i,
+  'Ransomware': /\b(ransomware|extortion|extort|encrypt|encrypted|encryption|decrypt|decrypted|ransom|leak site|exfiltration|lockbit|blackcat|clop|dark web|hostage|double extortion|affiliate)\b/i,
+  'Privacy': /\b(privacy|data privacy|surveillance|tracking|cookies|gdpr|regulation|fine|fines|compliance|personal data|consent|spy|spying|wiretap|biometric|user data)\b/i,
+  'Data Breaches': /\b(data breach|data breaches|breach|breached|breaches|leak|leaked|leaks|stolen credentials|credentials|passwords|database leaked|exposed records|exposed|compromise|compromised|identity theft|customer data|records exposed)\b/i,
+
+  // AI Pillar Domains
+  'Generative AI': /\b(generative ai|genai|llm|llms|chatgpt|gpt|claude|gemini|deepseek|mistral|prompt|diffusion|image generation|text generation)\b/i,
+  'AI Research': /\b(research|paper|benchmark|reasoning|breakthrough|study|finding|algorithm|weights|parameter|pre-training|post-training)\b/i,
+  'AI Startups': /\b(ai startup|ai startups|seed funding|venture|raised|valuation|stealth|founder|accelerator|yc)\b/i,
+  'AI Security': /\b(prompt injection|jailbreak|watermarking|alignment|safety|guardrail|adversarial|red teaming|vulnerability in ai)\b/i,
+  'AI Tools & Agents': /\b(agent|agents|agentic|autonomous agent|workflow|copilot|coding agent|tool|tools|orchestration|assistant)\b/i,
+  'Enterprise AI': /\b(enterprise ai|adoption|governance|deployment|roi|integration|production|internal platform|cdo)\b/i,
+  'AI Policy': /\b(policy|regulation|governance|compliance|standard|law|act|eu ai act|accord|treaty|framework|standards)\b/i
+};
+
 class GlobalCoverageApp {
   constructor() {
     this.currentHeroIndex = 0;
     this.currentHeroPage = 0;
+    this.heroFlipInProgress = false;
+    this.heroRenderPending = false;
+    this.heroFlipTimer = null;
     this.currentTrendingIndex = 0;
     this.currentPage = 'home';
     this.libraryView = 'saved';
@@ -87,10 +129,13 @@ class GlobalCoverageApp {
     this.newsRefreshTimer = null;
     this.liveRefreshTimer = null;
 
-    // Backend API and authenticated session - dynamic hostname for LAN access
+    // Backend API and authenticated session - dynamic hostname & protocol for local and production deployment
     const apiHost = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : 'localhost';
-    this.apiBase = `http://${apiHost}:4000/api`;
-    this.socketUrl = `http://${apiHost}:4000`;
+    const apiOrigin = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.protocol !== 'file:')
+      ? window.location.origin
+      : 'http://' + apiHost + ':3000';
+    this.apiBase = apiOrigin + '/api';
+    this.socketUrl = apiOrigin;
     this.apiAvailable = false;
     this.authToken = localStorage.getItem('gc_auth_token') || null;
     this.currentUser = JSON.parse(localStorage.getItem('gc_current_user') || 'null');
@@ -114,12 +159,18 @@ class GlobalCoverageApp {
     this.newsletterSubscribers = this.readStoredArray('gc_newsletter_subscribers');
     this.eventRegistrations = this.readStoredArray('gc_event_registrations');
     this.notifCount = 3;
-    this.aiChat = this.readStoredArray('gc_ai_chat');
     this.inFlightRequests = new Map();
     this.lastApiRequestAt = {};
     this.lastAuthAttemptAt = 0;
     this.lastTrendingAuthorsLoadAt = 0;
     this.trendingAuthorsRequestInFlight = false;
+
+    // Phase 1: Home Latest Feed pagination, filter, and sorting state
+    this.homeLatestFilter = 'all';
+    this.homeLatestSort = 'latest';
+    this.homeLatestPage = 1;
+    this.homeLatestPageSize = 9;
+    this.homeLatestLoading = false;
 
     this.init();
   }
@@ -130,6 +181,10 @@ class GlobalCoverageApp {
     this.renderDate();
     this.renderLiveUpdates();
     this.renderTicker();
+
+    // Fetch real-time articles & events from backend first
+    await this.checkBackendConnection();
+
     this.renderHero();
     this.renderTrending();
     this.renderEvents();
@@ -145,9 +200,11 @@ class GlobalCoverageApp {
     this.startTrendingAutoRotate();
     this.startNewsRefresh();
 
+    // Auto-open deep linked article if shared via URL
+    await this.checkAndOpenDeepLinkedArticle();
+
     // Restore any existing authenticated session; never auto-login seed accounts.
     this.updateNavVisibility();
-    this.checkBackendConnection();
     this.initRealtime();
 
     if (window.lucide) lucide.createIcons();
@@ -235,7 +292,8 @@ class GlobalCoverageApp {
     const staleKeys = ['gc_submissions', 'gc_admin_submissions', 'gc_publisher_submissions', 'gc_demo_articles', 'gc_demo_events'];
     staleKeys.forEach((key) => localStorage.removeItem(key));
 
-    ['gc_saved', 'gc_following', 'gc_history', 'gc_bookmarked_events', 'gc_newsletter_subscribers', 'gc_event_registrations', 'gc_ai_chat']
+    localStorage.removeItem('gc_ai_chat');
+    ['gc_saved', 'gc_following', 'gc_history', 'gc_bookmarked_events', 'gc_newsletter_subscribers', 'gc_event_registrations']
       .forEach((key) => {
         try {
           const value = JSON.parse(localStorage.getItem(key) || 'null');
@@ -254,6 +312,7 @@ class GlobalCoverageApp {
 
     this.liveRefreshTimer = setInterval(() => {
       this.fetchBackendArticles();
+      this.fetchTicker();
       this.fetchBackendEvents();
       if (this.currentUser && ['PUBLISHER', 'ADMIN'].includes(this.currentUser.role)) {
         this.renderPublisherTracker();
@@ -274,6 +333,7 @@ class GlobalCoverageApp {
       const now = new Date();
       const dateEl = document.getElementById('current-date');
       const clockText = document.getElementById('ist-clock-text');
+      const analogClock = document.querySelector('.analog-clock');
 
       // IST format: Asia/Kolkata timezone with 12-hour AM/PM
       const istTimeStr = now.toLocaleTimeString('en-US', {
@@ -283,12 +343,22 @@ class GlobalCoverageApp {
         second: '2-digit',
         hour12: true
       });
+      const istTimeParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false
+      }).formatToParts(now);
+      const timePart = (type) => Number(istTimeParts.find((part) => part.type === type)?.value || 0);
+      const hours = timePart('hour') % 12;
+      const minutes = timePart('minute');
+      const seconds = timePart('second');
 
       const istDateStr = now.toLocaleDateString('en-US', {
         timeZone: 'Asia/Kolkata',
         weekday: 'long',
-        year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric'
       });
 
@@ -297,6 +367,11 @@ class GlobalCoverageApp {
       }
       if (dateEl) {
         dateEl.textContent = istDateStr;
+      }
+      if (analogClock) {
+        analogClock.querySelector('.analog-clock-hour').style.transform = `rotate(${hours * 30 + minutes * 0.5 + seconds * (0.5 / 60)}deg)`;
+        analogClock.querySelector('.analog-clock-minute').style.transform = `rotate(${minutes * 6 + seconds * 0.1}deg)`;
+        analogClock.querySelector('.analog-clock-second').style.transform = `rotate(${seconds * 6}deg)`;
       }
     };
     updateClock();
@@ -381,7 +456,7 @@ class GlobalCoverageApp {
     }
 
     if (method === 'GET') {
-      const cooldownMs = 1500;
+      const cooldownMs = 200;
       const lastRequestAt = this.lastApiRequestAt[path] || 0;
       const now = Date.now();
       if (lastRequestAt && (now - lastRequestAt) < cooldownMs) {
@@ -596,6 +671,94 @@ class GlobalCoverageApp {
           this.loadArticleComments(data.articleId);
         }
       });
+
+      // Real-time Event: Comment updated
+      this.socket.on('comment:updated', (data) => {
+        console.log('⚡ [Realtime] Comment updated:', data);
+        if (this.activeReaderArticleId === data.articleId) {
+          this.loadArticleComments(data.articleId);
+        }
+      });
+
+      // Real-time Event: Comment deleted
+      this.socket.on('comment:deleted', (data) => {
+        console.log('⚡ [Realtime] Comment deleted:', data);
+        if (this.activeReaderArticleId === data.articleId) {
+          this.loadArticleComments(data.articleId);
+        }
+      });
+
+      // Real-time Event: Reaction updated
+      this.socket.on('reaction:updated', (data) => {
+        console.log('⚡ [Realtime] Reaction updated:', data);
+        if (this.activeReaderArticleId === data.articleId) {
+          this.loadArticleReactions(data.articleId);
+        }
+      });
+
+      // Real-time Event: Individual article syndicated from wire
+      this.socket.on('article:created', (data) => {
+        console.log('⚡ [Realtime] New syndicated story:', data);
+        if (!data || !data.title) return;
+        if (!APPROVED_CATEGORIES.includes(data.category) || NON_ENGLISH_REGEX.test(data.title)) {
+          return;
+        }
+        if (this.dynamicHome?.articles) {
+          const exists = this.dynamicHome.articles.some(a => a.id === data.id || a.title === data.title);
+          if (!exists) {
+            const formatted = {
+              id: data.id,
+              title: data.title,
+              summary: data.summary,
+              description: data.summary,
+              category: data.category,
+              domain: data.domain || data.category,
+              author: 'Editorial Desk',
+              date: new Date(data.publishedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              published: new Date(data.publishedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              time: 'Just now',
+              readTime: '3 min read',
+              image: data.image || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80'
+            };
+            this.dynamicHome.articles.unshift(formatted);
+            this.dynamicHome.trending.unshift(formatted);
+            this.dynamicHome.trending = this.dynamicHome.trending.slice(0, 10);
+            if (GC_DATA.master) {
+              GC_DATA.master.articles = this.dynamicHome.articles;
+              GC_DATA.master.trending = this.dynamicHome.trending;
+            }
+            this.renderHero();
+            this.renderTrending();
+            this.renderTicker();
+            this.renderCategoryFeeds();
+            this.renderTechSpotlight();
+            this.renderBusinessHighlights();
+            this.renderCyberAlerts();
+            this.renderAIHighlights();
+
+            const liveMsg = document.getElementById('live-update-message');
+            if (liveMsg) {
+              liveMsg.textContent = `New: [${data.domain || data.category}] ${data.title.substring(0, 48)}...`;
+            }
+          }
+        }
+      });
+
+      // Real-time Event 8: RSS wire syndicated
+      this.socket.on('articles:rss_synced', async (data) => {
+        console.log('⚡ [Realtime] RSS Wire Synced:', data);
+        await this.fetchBackendArticles();
+        await this.fetchTicker();
+        const liveMsg = document.getElementById('live-update-message');
+        if (liveMsg) {
+          liveMsg.textContent = data?.inserted > 0
+            ? `Wire Updated • ${data.inserted} fresh stories syndicated`
+            : 'Live Wire Active • Business, IT, Cyber & AI Feeds Synced';
+        }
+        if (data && data.inserted > 0) {
+          this.showToast(`⚡ Wire Alert: ${data.inserted} fresh stories syndicated`);
+        }
+      });
     } catch (err) {
       console.warn('[Socket.io] Realtime init error:', err);
     }
@@ -606,8 +769,8 @@ class GlobalCoverageApp {
     if (res.ok) {
       this.apiAvailable = true;
       this.clearUnusedStorage();
-      this.fetchBackendArticles();
-      this.fetchBackendEvents();
+      await this.fetchBackendArticles();
+      await this.fetchBackendEvents();
       if (this.authToken) {
         this.fetchUserLibrarySync();
         this.renderPublisherTracker();
@@ -620,39 +783,53 @@ class GlobalCoverageApp {
   }
 
   async fetchBackendArticles() {
-    const res = await this.apiFetch('/articles');
+    const res = await this.apiFetch('/articles?limit=500');
     if (res.ok && res.data?.articles?.length) {
-      const backendArticles = res.data.articles.map((a, i) => ({
-        id: a.id,
-        title: a.title,
-        summary: a.summary,
-        description: a.summary,
-        body: a.body,
-        category: a.category,
-        domain: a.domain || a.category,
-        author: a.author?.name || 'Editorial Desk',
-        authorId: a.author?.id || null,
-        status: a.status || 'PENDING',
-        editorialFeedback: a.editorialFeedback || null,
-        date: new Date(a.publishedAt || a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        published: new Date(a.publishedAt || a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        readTime: '4 min read',
-        image: a.image || (GC_DATA.articles && GC_DATA.articles[i % GC_DATA.articles.length]?.image) || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80'
-      }));
+      const validRawArticles = res.data.articles.filter(a => 
+        APPROVED_CATEGORIES.includes(a.category) && 
+        !NON_ENGLISH_REGEX.test(a.title) &&
+        (!a.summary || !NON_ENGLISH_REGEX.test(a.summary))
+      );
+      const backendArticles = validRawArticles.map((a, i) => {
+        const wordCount = (a.body || a.summary || '').split(/\s+/).filter(Boolean).length;
+        const calcReadTime = `${Math.max(2, Math.ceil(wordCount / 180))} min read`;
+        const pubDate = a.publishedAt || a.createdAt;
+        return {
+          id: a.id,
+          title: a.title,
+          summary: a.summary,
+          description: a.summary,
+          body: a.body,
+          category: a.category,
+          domain: a.domain || a.category,
+          author: a.author?.name || 'Editorial Desk',
+          authorId: a.author?.id || null,
+          status: a.status || 'PENDING',
+          editorialFeedback: a.editorialFeedback || null,
+          publishedAt: pubDate,
+          date: new Date(pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          published: new Date(pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          time: 'Recent',
+          readTime: calcReadTime,
+          image: a.image || (GC_DATA.articles && GC_DATA.articles[i % GC_DATA.articles.length]?.image) || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80',
+          commentsCount: a._count?.comments || 0,
+          savedCount: a._count?.savedBy || 0
+        };
+      });
 
-      // In production mode, eliminate hardcoded mock state by directly using database articles
+      // Update both active state and master data so rotation stays on real syndicated articles
+      if (!GC_DATA.master) GC_DATA.master = {};
+      GC_DATA.master.articles = backendArticles;
+      GC_DATA.master.heroStories = backendArticles.slice(0, 5);
+      GC_DATA.master.trending = backendArticles.slice(5, 15);
       GC_DATA.articles = backendArticles;
-      this.dynamicHome.heroStories = backendArticles.slice(0, 3);
-      this.dynamicHome.trending = backendArticles.slice(3, 8);
+      this.dynamicHome.heroStories = backendArticles.slice(0, 5);
+      this.dynamicHome.trending = backendArticles.slice(5, 15);
       this.dynamicHome.articles = backendArticles;
 
-      this.renderHero();
-      this.renderTrending();
+      this.renderHomePage();
       this.renderCategoryFeeds();
-      this.renderTechSpotlight();
-      this.renderBusinessHighlights();
-      this.renderCyberAlerts();
-      this.renderAIHighlights();
+      if (this.currentPage === 'ai') this.renderAIPage();
     }
   }
 
@@ -1425,7 +1602,8 @@ class GlobalCoverageApp {
   }
 
   async copyCredentials(email, password, role) {
-    const textToCopy = `OPEN MEDIA CREDENTIALS\nRole: ${role}\nEmail: ${email}\nPassword: ${password}\nURL: http://localhost:4000`;
+    const siteUrl = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://localhost:4000';
+    const textToCopy = `OPEN MEDIA CREDENTIALS\nRole: ${role}\nEmail: ${email}\nPassword: ${password}\nURL: ${siteUrl}`;
     try {
       await navigator.clipboard.writeText(textToCopy);
       const btn = document.getElementById('btn-copy-creds');
@@ -1446,7 +1624,22 @@ class GlobalCoverageApp {
     }
   }
 
-  // --- Article Reader Comments Integration ---
+  // --- Article Reader Comments & Threaded Replies Integration (Phase 2) ---
+  formatTimeAgo(dateInput) {
+    if (!dateInput) return 'Just now';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return 'Recently';
+    const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   async loadArticleComments(articleId) {
     const listEl = document.getElementById(`comments-list-${articleId}`);
     const countEl = document.getElementById(`comment-count-${articleId}`);
@@ -1454,33 +1647,204 @@ class GlobalCoverageApp {
 
     const res = await this.apiFetch(`/articles/${articleId}/comments`);
     let comments = [];
+    let totalCount = 0;
 
     if (res.ok && Array.isArray(res.data?.comments)) {
       comments = res.data.comments;
+      totalCount = res.data.totalCount || comments.length;
     } else {
       comments = this.articleCommentsCache[articleId] || [];
+      totalCount = comments.length;
     }
 
-    if (countEl) countEl.textContent = comments.length;
+    if (countEl) countEl.textContent = totalCount;
 
     if (!comments.length) {
-      listEl.innerHTML = `<div style="text-align:center; padding:18px; color:var(--color-dark-gray); font-size:0.85rem; font-style:italic;">No comments yet. Be the first to share your thoughts!</div>`;
+      listEl.innerHTML = `<div style="text-align:center; padding:24px; color:var(--color-dark-gray); font-size:0.88rem; font-style:italic;">No comments yet. Be the first to share your perspective!</div>`;
       return;
     }
 
-    listEl.innerHTML = comments.map(c => {
+    const currentUserId = this.currentUser?.id;
+    const isAdmin = this.currentUser?.role === 'ADMIN';
+
+    const renderCommentCard = (c, isReply = false) => {
       const author = c.user?.name || 'Reader';
-      const time = c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
+      const role = c.user?.role || 'USER';
+      const isOwner = (c.userId === currentUserId || c.user?.id === currentUserId);
+      const canManage = isOwner || isAdmin;
+      const initial = author.charAt(0).toUpperCase();
+      const timeStr = this.formatTimeAgo(c.createdAt);
+      const editedTag = c.isEdited ? `<span class="comment-edited-tag">(edited)</span>` : '';
+      const roleBadge = role === 'ADMIN' 
+        ? `<span class="comment-role-badge role-admin">Editor</span>`
+        : role === 'PUBLISHER'
+        ? `<span class="comment-role-badge role-publisher">Author</span>`
+        : '';
+
+      const repliesHtml = (!isReply && Array.isArray(c.replies) && c.replies.length > 0)
+        ? `<div class="comment-replies-list">
+             ${c.replies.map(r => renderCommentCard(r, true)).join('')}
+           </div>`
+        : '';
+
       return `
-        <div class="comment-card">
-          <div class="comment-meta">
-            <b>${this.escapeHTML(author)}</b>
-            <span>${time}</span>
+        <div class="${isReply ? 'comment-reply-card' : 'comment-card'}" id="comment-container-${c.id}">
+          <div class="comment-header">
+            <div class="comment-author-info">
+              <span class="comment-avatar">${initial}</span>
+              <span class="comment-author-name">${this.escapeHTML(author)}</span>
+              ${roleBadge}
+              <span class="comment-time">${timeStr}${editedTag}</span>
+            </div>
+            <div class="comment-options">
+              <button class="comment-action-link" onclick="app.reportComment('${c.id}')" title="Report inappropriate comment"><i data-lucide="flag"></i></button>
+            </div>
           </div>
-          <div class="comment-content">${this.escapeHTML(c.content)}</div>
+          <div class="comment-content" id="comment-body-${c.id}">${this.escapeHTML(c.content)}</div>
+          
+          <div class="comment-actions-bar">
+            ${!isReply ? `<button class="comment-action-link" onclick="app.toggleReplyBox('${c.id}')"><i data-lucide="reply"></i> Reply</button>` : ''}
+            ${canManage ? `<button class="comment-action-link" onclick="app.toggleEditBox('${c.id}')"><i data-lucide="edit-3"></i> Edit</button>` : ''}
+            ${canManage ? `<button class="comment-action-link delete" onclick="app.deleteComment('${c.id}', '${articleId}')"><i data-lucide="trash-2"></i> Delete</button>` : ''}
+          </div>
+
+          <!-- Inline Edit Form (Hidden by default) -->
+          <div class="comment-edit-box" id="edit-box-${c.id}" style="display:none;">
+            <textarea id="edit-input-${c.id}">${this.escapeHTML(c.content)}</textarea>
+            <div class="comment-edit-actions">
+              <button type="button" class="btn btn-outline btn-sm" onclick="app.toggleEditBox('${c.id}')">Cancel</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="app.saveCommentEdit('${c.id}', '${articleId}')">Save Changes</button>
+            </div>
+          </div>
+
+          <!-- Inline Reply Form (Hidden by default) -->
+          ${!isReply ? `
+            <div class="comment-reply-box" id="reply-box-${c.id}" style="display:none;">
+              <textarea id="reply-input-${c.id}" placeholder="Write a reply to ${this.escapeHTML(author)}..."></textarea>
+              <div class="comment-reply-actions">
+                <button type="button" class="btn btn-outline btn-sm" onclick="app.toggleReplyBox('${c.id}')">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="app.submitReply('${articleId}', '${c.id}')"><i data-lucide="send"></i> Post Reply</button>
+              </div>
+            </div>
+          ` : ''}
+
+          ${repliesHtml}
         </div>
       `;
-    }).join('');
+    };
+
+    listEl.innerHTML = comments.map(c => renderCommentCard(c, false)).join('');
+    this.refreshIcons(listEl);
+  }
+
+  toggleReplyBox(commentId) {
+    if (!this.currentUser) {
+      this.openAuthModal('login');
+      this.showToast('Please sign in to reply to comments.');
+      return;
+    }
+    const box = document.getElementById(`reply-box-${commentId}`);
+    if (!box) return;
+    const isHidden = box.style.display === 'none';
+    box.style.display = isHidden ? 'flex' : 'none';
+    if (isHidden) {
+      const input = document.getElementById(`reply-input-${commentId}`);
+      if (input) input.focus();
+    }
+    this.refreshIcons(box);
+  }
+
+  toggleEditBox(commentId) {
+    const box = document.getElementById(`edit-box-${commentId}`);
+    const body = document.getElementById(`comment-body-${commentId}`);
+    if (!box) return;
+    const isHidden = box.style.display === 'none';
+    box.style.display = isHidden ? 'flex' : 'none';
+    if (body) body.style.display = isHidden ? 'none' : 'block';
+    if (isHidden) {
+      const input = document.getElementById(`edit-input-${commentId}`);
+      if (input) input.focus();
+    }
+    this.refreshIcons(box);
+  }
+
+  async submitReply(articleId, parentId) {
+    const input = document.getElementById(`reply-input-${parentId}`);
+    if (!input || !input.value.trim()) {
+      this.showToast('Reply cannot be empty.');
+      return;
+    }
+    const content = input.value.trim();
+
+    const res = await this.apiFetch(`/articles/${articleId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content, parentId })
+    });
+
+    if (res.ok) {
+      input.value = '';
+      this.showToast('Reply posted successfully');
+      this.loadArticleComments(articleId);
+    } else {
+      this.showToast(`Failed to post reply: ${res.data?.error || 'Error'}`);
+    }
+  }
+
+  async saveCommentEdit(commentId, articleId) {
+    const input = document.getElementById(`edit-input-${commentId}`);
+    if (!input || !input.value.trim()) {
+      this.showToast('Comment cannot be empty.');
+      return;
+    }
+    const content = input.value.trim();
+
+    const res = await this.apiFetch(`/articles/comments/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content })
+    });
+
+    if (res.ok) {
+      this.showToast('Comment updated.');
+      this.loadArticleComments(articleId);
+    } else {
+      this.showToast(`Failed to update comment: ${res.data?.error || 'Unauthorized'}`);
+    }
+  }
+
+  async deleteComment(commentId, articleId) {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    const res = await this.apiFetch(`/articles/comments/${commentId}`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      this.showToast('Comment deleted.');
+      this.loadArticleComments(articleId);
+    } else {
+      this.showToast(`Failed to delete comment: ${res.data?.error || 'Unauthorized'}`);
+    }
+  }
+
+  async reportComment(commentId) {
+    if (!this.currentUser) {
+      this.openAuthModal('login');
+      this.showToast('Please sign in to report content.');
+      return;
+    }
+    const reason = prompt('Please specify why this comment is inappropriate (e.g. spam, abusive, off-topic):');
+    if (!reason || !reason.trim()) return;
+
+    const res = await this.apiFetch(`/articles/comments/${commentId}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason.trim() })
+    });
+
+    if (res.ok) {
+      this.showToast('Thank you. Comment reported for editorial moderation.');
+    } else {
+      this.showToast('Failed to submit report.');
+    }
   }
 
   async handleCommentSubmit(e, articleId) {
@@ -1521,21 +1885,244 @@ class GlobalCoverageApp {
     }
   }
 
+  // --- Article Reactions Methods (Phase 2) ---
+  async loadArticleReactions(articleId) {
+    const totalEl = document.getElementById(`reactions-total-${articleId}`);
+    const likeCountEl = document.getElementById(`rx-count-like-${articleId}`);
+    const insightfulCountEl = document.getElementById(`rx-count-insightful-${articleId}`);
+    const helpfulCountEl = document.getElementById(`rx-count-helpful-${articleId}`);
+    const likeBtn = document.getElementById(`rx-btn-like-${articleId}`);
+    const insightfulBtn = document.getElementById(`rx-btn-insightful-${articleId}`);
+    const helpfulBtn = document.getElementById(`rx-btn-helpful-${articleId}`);
+
+    if (!likeBtn) return;
+
+    const res = await this.apiFetch(`/articles/${articleId}/reactions`);
+    if (res.ok && res.data) {
+      const counts = res.data.counts || { LIKE: 0, INSIGHTFUL: 0, HELPFUL: 0, total: 0 };
+      const userReaction = res.data.userReaction || null;
+
+      if (totalEl) totalEl.textContent = `${counts.total} ${counts.total === 1 ? 'Reaction' : 'Reactions'}`;
+      if (likeCountEl) likeCountEl.textContent = counts.LIKE || 0;
+      if (insightfulCountEl) insightfulCountEl.textContent = counts.INSIGHTFUL || 0;
+      if (helpfulCountEl) helpfulCountEl.textContent = counts.HELPFUL || 0;
+
+      likeBtn.classList.toggle('active', userReaction === 'LIKE');
+      insightfulBtn.classList.toggle('active', userReaction === 'INSIGHTFUL');
+      helpfulBtn.classList.toggle('active', userReaction === 'HELPFUL');
+    }
+  }
+
+  async toggleArticleReaction(articleId, type) {
+    if (!this.currentUser) {
+      this.openAuthModal('login');
+      this.showToast('Please sign in to react to articles.');
+      return;
+    }
+
+    const res = await this.apiFetch(`/articles/${articleId}/reactions`, {
+      method: 'POST',
+      body: JSON.stringify({ type })
+    });
+
+    if (res.ok && res.data) {
+      this.showToast(res.data.message || 'Reaction updated');
+      this.loadArticleReactions(articleId);
+    } else {
+      this.showToast(`Failed to update reaction: ${res.data?.error || 'Error'}`);
+    }
+  }
+
+  // --- Article Social Share Methods (Phase 2) ---
+  async openShareModal(articleId) {
+    let article = this.findArticle(articleId);
+    if (!article) {
+      try {
+        const res = await this.apiFetch(`/articles/${articleId}`);
+        if (res.ok && res.data?.article) {
+          const a = res.data.article;
+          article = {
+            id: a.id,
+            title: a.title,
+            summary: a.summary,
+            description: a.summary,
+            category: a.category,
+            author: a.author?.name || 'Editorial Desk',
+            readTime: '3 min read'
+          };
+        }
+      } catch (e) {}
+    }
+    if (!article) {
+      this.showToast('Unable to share: article details could not be loaded.');
+      return;
+    }
+
+    const modal = document.getElementById('share-modal');
+    const body = document.getElementById('share-modal-body');
+    if (!modal || !body) return;
+
+    const origin = window.location.origin;
+    const shareUrl = `${origin}/?article=${encodeURIComponent(article.id)}#article-${encodeURIComponent(article.id)}`;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedTitle = encodeURIComponent(article.title);
+    const canNativeShare = Boolean(navigator.share);
+
+    body.innerHTML = `
+      <div class="share-article-preview">
+        <h4 class="share-article-title">${this.escapeHTML(article.title)}</h4>
+        <div class="share-article-meta">
+          <span>By ${this.escapeHTML(article.author || 'Editorial Lead')}</span> ·
+          <span>${article.category}</span> ·
+          <span>${article.readTime || '3 min read'}</span>
+        </div>
+      </div>
+      ${canNativeShare ? `
+        <div style="margin-bottom:12px;">
+          <button class="btn btn-primary" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="app.triggerNativeShare('${article.id}')">
+            <i data-lucide="share-2"></i> Share via Device / System Sheet
+          </button>
+        </div>
+      ` : ''}
+      <div class="social-share-grid">
+        <a href="https://api.whatsapp.com/send?text=${encodedTitle}%0A%0A${encodedUrl}" target="_blank" rel="noopener noreferrer" class="social-share-btn btn-whatsapp" title="Share on WhatsApp">
+          <i data-lucide="message-circle"></i>
+          <span>WhatsApp</span>
+        </a>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener noreferrer" class="social-share-btn btn-linkedin" title="Share on LinkedIn">
+          <i data-lucide="linkedin"></i>
+          <span>LinkedIn</span>
+        </a>
+        <a href="https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}" target="_blank" rel="noopener noreferrer" class="social-share-btn btn-x" title="Share on X (Twitter)">
+          <i data-lucide="twitter"></i>
+          <span>X / Twitter</span>
+        </a>
+        <a href="https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}" target="_blank" rel="noopener noreferrer" class="social-share-btn btn-telegram" title="Share on Telegram">
+          <i data-lucide="send"></i>
+          <span>Telegram</span>
+        </a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener noreferrer" class="social-share-btn btn-facebook" title="Share on Facebook">
+          <i data-lucide="facebook"></i>
+          <span>Facebook</span>
+        </a>
+        <button type="button" class="social-share-btn btn-copylink" onclick="app.copyShareUrl('${article.id}')" title="Copy article link">
+          <i data-lucide="copy"></i>
+          <span>Copy Link</span>
+        </button>
+      </div>
+      <div class="share-url-box" style="margin-top:14px;">
+        <input type="text" id="share-link-input-${article.id}" value="${shareUrl}" readonly onclick="this.select()">
+        <button class="btn btn-primary btn-sm" onclick="app.copyShareUrl('${article.id}')"><i data-lucide="clipboard"></i> Copy</button>
+      </div>
+    `;
+
+    modal.classList.add('show');
+    this.updateModalOpenState(true);
+    this.refreshIcons(body);
+  }
+
+  async triggerNativeShare(articleId) {
+    let article = this.findArticle(articleId);
+    if (!article) return;
+    const shareUrl = `${window.location.origin}/?article=${encodeURIComponent(article.id)}#article-${encodeURIComponent(article.id)}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.summary || article.description || article.title,
+          url: shareUrl
+        });
+        this.showToast('Shared successfully!');
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          this.showToast('Could not share via device sheet.');
+        }
+      }
+    }
+  }
+
+  closeShareModal() {
+    const modal = document.getElementById('share-modal');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+  }
+
+  async copyShareUrl(articleId) {
+    const input = document.getElementById(`share-link-input-${articleId}`);
+    const shareUrl = input ? input.value : `${window.location.origin}/?article=${encodeURIComponent(articleId)}#article-${encodeURIComponent(articleId)}`;
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        this.showToast('Article link copied to clipboard!');
+        return;
+      }
+    } catch (e) {}
+
+    if (input) {
+      input.select();
+      document.execCommand('copy');
+      this.showToast('Article link copied to clipboard!');
+    }
+  }
+
   // --- SPA Navigation / Routing ---
   renderHomePage() {
     this.renderHero();
     this.renderTrending();
     this.renderTicker();
-    this.renderEvents();
     this.renderEditorPicks();
+    this.renderHomeForYou();
+    this.renderHomeLatestFeed();
     this.renderTechSpotlight();
-    this.renderBusinessHighlights();
-    this.renderCyberAlerts();
     this.renderAIHighlights();
+    this.renderCyberAlerts();
+    this.renderBusinessHighlights();
+    this.renderTechInsights();
+    this.renderHomeDiscussions();
+    this.renderHomePolls();
+    this.renderEvents();
     this.renderTrendingFlipbook();
   }
 
+  detectArticleDeepLink() {
+    // 1. Check query parameter: ?article=... or ?id=...
+    try {
+      if (typeof window !== 'undefined' && window.location && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const articleParam = params.get('article') || params.get('id');
+        if (articleParam && articleParam.trim()) {
+          return decodeURIComponent(articleParam.trim());
+        }
+      }
+    } catch (_) {}
+
+    // 2. Check hash: #article-xyz or #article/xyz or #/article/xyz
+    const rawHash = (typeof window !== 'undefined' && window.location && window.location.hash) ? window.location.hash.trim() : '';
+    const hashMatch = rawHash.match(/^#(?:article[-/]|(?:\/article\/))(.+)$/i);
+    if (hashMatch && hashMatch[1]) {
+      return decodeURIComponent(hashMatch[1].trim());
+    }
+
+    // 3. Check path: /article/xyz
+    const rawPath = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname.trim() : '';
+    const pathMatch = rawPath.match(/^\/article\/(.+)$/i);
+    if (pathMatch && pathMatch[1]) {
+      return decodeURIComponent(pathMatch[1].trim());
+    }
+
+    return null;
+  }
+
+  async checkAndOpenDeepLinkedArticle() {
+    const articleId = this.detectArticleDeepLink();
+    if (articleId) {
+      console.log('🔗 [Deep Link] Opening article:', articleId);
+      await this.openArticleModal(articleId);
+    }
+  }
+
   handleInitialRoute() {
+    const deepArticleId = this.detectArticleDeepLink();
     const rawHash = (window.location.hash || '').trim();
     let page = 'home';
 
@@ -1546,7 +2133,8 @@ class GlobalCoverageApp {
       }
     }
 
-    if (!rawHash || rawHash === '#' || page === 'home') {
+    // Only force #home if there is NO deep article link AND no other valid page hash
+    if (!deepArticleId && (!rawHash || rawHash === '#' || page === 'home')) {
       if (window.location.hash !== '#home') {
         window.history.replaceState(null, '', '#home');
       }
@@ -1561,8 +2149,22 @@ class GlobalCoverageApp {
     this.handleInitialRoute();
   }
 
-  handleHashChange() {
-    const page = (location.hash || '#home').replace('#', '');
+  async handleHashChange() {
+    const rawHash = (location.hash || '').trim();
+    const deepArticleId = this.detectArticleDeepLink();
+
+    if (deepArticleId) {
+      if (this.activeReaderArticleId !== deepArticleId) {
+        await this.openArticleModal(deepArticleId);
+      }
+      return;
+    }
+
+    if (this.activeReaderArticleId && !rawHash.startsWith('#article-')) {
+      this.closeArticleModal(false);
+    }
+
+    const page = (rawHash || '#home').replace(/^#/, '');
     if (VALID_PAGES.includes(page)) {
       this.navigateTo(page, false);
     }
@@ -1612,7 +2214,13 @@ class GlobalCoverageApp {
       history.pushState(null, '', `#${pageId}`);
     }
 
-    if (pageId === 'ai') {
+    if (pageId === 'business') {
+      this.renderCategoryFeed('business', 'business-feed', 'business-domain-tree', BUSINESS_DOMAIN_GROUPS, 'business-ad-slot');
+    } else if (pageId === 'tech') {
+      this.renderCategoryFeed('tech', 'tech-feed', 'tech-domain-tree', TECH_DOMAIN_GROUPS, 'tech-ad-slot');
+    } else if (pageId === 'cyber') {
+      this.renderCategoryFeed('cyber', 'cyber-feed', 'cyber-domain-tree', CYBER_DOMAIN_GROUPS, null);
+    } else if (pageId === 'ai') {
       this.renderAIPage();
     }
 
@@ -1675,25 +2283,53 @@ class GlobalCoverageApp {
 
   // --- Homepage Hero Carousel + Side Trending Panel ---
   renderHero() {
+    if (this.heroFlipInProgress) {
+      this.heroRenderPending = true;
+      return;
+    }
+
     const heroes = this.getHomeHeroStories();
     const hero = heroes[this.currentHeroIndex] || heroes[0];
     const container = document.getElementById('hero-main-card');
     if (!container || !hero) return;
-    const catSlug = this.categorySlug(hero.category);
     const user = this.getCurrentUser();
 
     container.innerHTML = `
-      <div class="hero-image-box" id="hero-image-box">
+      <div class="hero-page-content">${this.heroPageMarkup(hero, this.currentHeroIndex, heroes.length, user)}</div>
+      <div class="hero-carousel-controls">
+        <button class="hero-nav-btn" data-hero-control onclick="app.prevHeroStory(true)" aria-label="Previous story">
+          <i data-lucide="arrow-left"></i> Previous
+        </button>
+        <div class="hero-dots">
+          ${heroes.map((_, i) => `<button class="hero-dot ${i === this.currentHeroIndex ? 'active' : ''}" data-hero-control onclick="app.goToHeroStory(${i})" aria-label="Go to story ${i + 1}"></button>`).join('')}
+        </div>
+        <button class="hero-nav-btn" data-hero-control onclick="app.nextHeroStory(true)" aria-label="Next story">
+          Next <i data-lucide="arrow-right"></i>
+        </button>
+      </div>
+    `;
+
+    this.setupHeroSwipe();
+    this.setupHeroHoverPause();
+    this.renderSideTrendingPanel();
+    this.renderEditorPicks();
+    this.refreshIcons(container);
+  }
+
+  heroPageMarkup(hero, index, total, user) {
+    const catSlug = this.categorySlug(hero.category);
+    return `
+      <div class="hero-image-box">
         <img src="${hero.image}" alt="${hero.title}" loading="eager">
       </div>
       <div class="hero-top-bar">
         <span class="category-tag cat-${catSlug}">${hero.category}</span>
         <div class="hero-top-right">
           <span class="hero-live-badge"><span></span> Live Pulse</span>
-          <span class="hero-page-count" id="hero-page-count">${String(this.currentHeroIndex + 1).padStart(2, '0')} / ${String(heroes.length).padStart(2, '0')}</span>
+          <span class="hero-page-count">${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</span>
         </div>
       </div>
-      <div class="hero-body" id="hero-body-content">
+      <div class="hero-body">
         <h1 class="hero-title" onclick="app.openArticleModal('${hero.id}')" style="cursor:pointer;" title="Read full story">${hero.title}</h1>
         <p class="hero-desc">${hero.description}</p>
         <div class="hero-meta-row">
@@ -1709,83 +2345,59 @@ class GlobalCoverageApp {
           </div>
         </div>
       </div>
-      <div class="hero-carousel-controls">
-        <button class="hero-nav-btn" onclick="app.prevHeroStory(true)" aria-label="Previous story">
-          <i data-lucide="arrow-left"></i> Previous
-        </button>
-        <div class="hero-dots">
-          ${heroes.map((_, i) => `<button class="hero-dot ${i === this.currentHeroIndex ? 'active' : ''}" onclick="app.goToHeroStory(${i})" aria-label="Go to story ${i + 1}"></button>`).join('')}
-        </div>
-        <button class="hero-nav-btn" onclick="app.nextHeroStory(true)" aria-label="Next story">
-          Next <i data-lucide="arrow-right"></i>
-        </button>
-      </div>
     `;
-
-    this.setupHeroSwipe();
-    this.setupHeroHoverPause();
-    this.renderSideTrendingPanel();
-    this.renderEditorPicks();
-    this.refreshIcons(container);
   }
 
   flipHeroToStory(newIndex, direction) {
+    if (this.heroFlipInProgress) return;
+
     const heroes = this.getHomeHeroStories();
     const hero = heroes[newIndex];
     const container = document.getElementById('hero-main-card');
-    if (!container || !hero) return;
+    const page = container?.querySelector('.hero-page-content');
+    if (!container || !page || !hero || newIndex === this.currentHeroIndex) return;
+
+    this.heroFlipInProgress = true;
+    this.heroRenderPending = false;
+    container.querySelectorAll('[data-hero-control]').forEach((control) => {
+      control.disabled = true;
+    });
+
+    const turningPage = page.cloneNode(true);
+    turningPage.classList.add('hero-turn-page', direction > 0 ? 'hero-turn-forward' : 'hero-turn-backward');
+    turningPage.setAttribute('aria-hidden', 'true');
+    turningPage.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+    container.appendChild(turningPage);
 
     this.currentHeroIndex = newIndex;
-    const catSlug = this.categorySlug(hero.category);
-    const user = this.getCurrentUser();
+    page.innerHTML = this.heroPageMarkup(hero, newIndex, heroes.length, this.getCurrentUser());
+    this.refreshIcons(page);
 
-    const imgBox = container.querySelector('.hero-image-box');
-    const heroBody = container.querySelector('#hero-body-content');
-    const topBar = container.querySelector('.hero-top-bar');
+    let completed = false;
+    const finishFlip = () => {
+      if (completed) return;
+      completed = true;
+      clearTimeout(this.heroFlipTimer);
+      turningPage.removeEventListener('animationend', onAnimationEnd);
+      turningPage.remove();
+      container.querySelectorAll('[data-hero-control]').forEach((control) => {
+        control.disabled = false;
+      });
+      container.querySelectorAll('.hero-dot').forEach((dot, index) => {
+        dot.classList.toggle('active', index === this.currentHeroIndex);
+      });
+      this.heroFlipInProgress = false;
+      if (this.heroRenderPending) this.renderHero();
+    };
+    const onAnimationEnd = (event) => {
+      if (event.target === turningPage) finishFlip();
+    };
 
-    if (imgBox && heroBody) {
-      imgBox.style.opacity = '0.2';
-      heroBody.style.opacity = '0';
-      heroBody.style.transform = `translateX(${direction > 0 ? '16px' : '-16px'})`;
-
-      setTimeout(() => {
-        imgBox.innerHTML = `<img src="${hero.image}" alt="${hero.title}" loading="eager">`;
-        if (topBar) {
-          topBar.innerHTML = `
-            <span class="category-tag cat-${catSlug}">${hero.category}</span>
-            <div class="hero-top-right">
-              <span class="hero-live-badge"><span></span> Live Pulse</span>
-              <span class="hero-page-count" id="hero-page-count">${String(newIndex + 1).padStart(2, '0')} / ${String(heroes.length).padStart(2, '0')}</span>
-            </div>
-          `;
-        }
-        heroBody.innerHTML = `
-          <h1 class="hero-title" onclick="app.openArticleModal('${hero.id}')" style="cursor:pointer;" title="Read full story">${hero.title}</h1>
-          <p class="hero-desc">${hero.description}</p>
-          <div class="hero-meta-row">
-            <span>By <b>${hero.author}</b> · ${hero.readTime || ''} · Updated ${hero.published}</span>
-            <div class="hero-actions">
-              ${user ? `
-              <button class="icon-btn" onclick="app.toggleSaveArticle('${hero.id}', event)" title="Save" aria-label="Save story">
-                <i data-lucide="${this.isSaved(hero.id) ? 'bookmark-check' : 'bookmark'}"></i>
-              </button>` : ''}
-              <button class="icon-btn" onclick="app.openArticleModal('${hero.id}')" title="Read Full" aria-label="Read full story">
-                <i data-lucide="maximize-2"></i>
-              </button>
-            </div>
-          </div>
-        `;
-
-        container.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === newIndex));
-
-        imgBox.style.opacity = '1';
-        heroBody.style.opacity = '1';
-        heroBody.style.transform = 'translateX(0)';
-        this.refreshIcons(container);
-      }, 220);
-    } else {
-      this.renderHero();
-    }
+    turningPage.addEventListener('animationend', onAnimationEnd);
+    void turningPage.offsetWidth;
+    turningPage.classList.add('is-turning');
+    const fallbackDuration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 180 : 600;
+    this.heroFlipTimer = setTimeout(finishFlip, fallbackDuration);
   }
 
   nextHeroStory(userTriggered) {
@@ -1862,14 +2474,14 @@ class GlobalCoverageApp {
             <div class="side-trending-content">
               <span class="category-tag cat-${this.categorySlug(story.category)}">${story.category}</span>
               <h4 class="side-trending-title">${story.title}</h4>
-              <span class="side-trending-meta">${story.time} · Global Desk</span>
+              <span class="side-trending-meta">${story.time || story.date || 'Recent'} · ${story.author || 'Global Desk'}</span>
             </div>
           </div>
         `).join('')}
       </div>
       <div class="side-trending-footer">
-        <a href="javascript:void(0)" class="side-trending-link" onclick="document.getElementById('trending-container')?.scrollIntoView({behavior:'smooth'})">
-          View all trending stories <i data-lucide="arrow-right"></i>
+        <a href="#tech" class="side-trending-link" onclick="app.navigateTo('tech')">
+          Explore Latest Wire Stories <i data-lucide="arrow-right"></i>
         </a>
       </div>
     `;
@@ -1901,29 +2513,106 @@ class GlobalCoverageApp {
   renderEditorPicks() {
     const strip = document.getElementById('editor-picks-strip');
     if (!strip) return;
-    const picks = this.getHomeArticles().slice(0, 3);
+    const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+    const picks = this.getHomeArticles().filter(a => !heroIds.has(a.id)).slice(0, 3);
     strip.innerHTML = picks.map(a => this.horizontalCardHTML(a)).join('');
     this.refreshIcons(strip);
   }
 
-  // --- Ticker ---
+  // --- RSS Wire & Ticker Services ---
+  async fetchTicker() {
+    try {
+      const res = await this.apiFetch('/news/ticker');
+      const items = res.data?.items || res.data?.headlines;
+      if (res.ok && items?.length) {
+        this.tickerItems = items.filter(t => 
+          APPROVED_CATEGORIES.includes(t.category) && 
+          !NON_ENGLISH_REGEX.test(t.title)
+        );
+        this.renderTicker();
+      }
+    } catch (err) {
+      console.warn('Ticker fetch fallback', err);
+    }
+  }
+
   renderTicker() {
     const ticker = document.getElementById('ticker-content');
-    const stories = this.getHomeTrending();
-    if (!ticker || !stories.length) return;
-    ticker.innerHTML = `<div class="ticker-text">${stories.map(t => `<span class="ticker-story"><i data-lucide="${this.trendingIcon(t.category)}"></i><b>${t.category}</b><span>${t.title}</span></span><span class="ticker-separator">/</span>`).join('')}</div>`;
+    if (!ticker) return;
+    const stories = (this.tickerItems && this.tickerItems.length) ? this.tickerItems : this.getHomeTrending();
+    if (!stories || !stories.length) return;
+    ticker.innerHTML = `<div class="ticker-text">${stories.map(t => `<span class="ticker-story" ${t.id ? `onclick="app.openArticleModal('${t.id}')" style="cursor:pointer;"` : ''}><i data-lucide="${this.trendingIcon(t.category)}"></i><b>${t.category}</b><span>${t.title}</span></span><span class="ticker-separator">/</span>`).join('')}</div>`;
     this.refreshIcons(ticker);
+
+    const tickerText = ticker.querySelector('.ticker-text');
+    if (tickerText) {
+      // Set leisurely, readable speed: ~40px per second across content width
+      const contentWidth = tickerText.scrollWidth || 6000;
+      const smoothSeconds = Math.max(140, Math.round(contentWidth / 40));
+      tickerText.style.animationDuration = `${smoothSeconds}s`;
+    }
+  }
+
+  async syncLiveRSS(btn) {
+    if (this._syncingRSS) return;
+    this._syncingRSS = true;
+    const originalContent = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.classList.add('syncing');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="refresh-cw"></i> <span>Syncing...</span>`;
+      this.refreshIcons(btn);
+    }
+    this.showToast('Fetching latest syndicated wire updates from global RSS feeds...');
+    try {
+      const res = await this.apiFetch('/news/sync', { method: 'POST' });
+      if (res.ok && res.data?.success) {
+        const s = res.data.stats;
+        this.showToast(`⚡ Wire Synced: ${s.inserted} fresh stories added across ${s.feedsSucceeded} feeds!`);
+      } else {
+        this.showToast('Wire synchronization completed.');
+      }
+      await this.fetchBackendArticles();
+      await this.fetchTicker();
+    } catch (err) {
+      console.error('RSS wire sync error:', err);
+      this.showToast('Wire sync encountered an issue.');
+    } finally {
+      this._syncingRSS = false;
+      if (btn) {
+        btn.classList.remove('syncing');
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+        this.refreshIcons(btn);
+      }
+    }
   }
 
   // --- Card render helpers ---
   horizontalCardHTML(item) {
+    if (!item) return '';
+    const isSaved = this.isSaved(item.id);
+    const domainBadge = item.domain || item.category;
+    const dateStr = item.time || item.date || item.published || 'Recent';
+    const readTimeStr = item.readTime || '3 min read';
+
     return `
-      <div class="horizontal-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button">
-        <img src="${item.image}" alt="${item.title}" loading="lazy">
+      <div class="horizontal-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
+        <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
         <div class="horizontal-card-body">
-          <span class="story-category text-${this.accentClass(item.category)}">${item.domain || item.category}</span>
-          <h4 class="story-title" style="font-size:0.95rem; margin: 6px 0;">${item.title}</h4>
-          <span class="text-muted" style="font-size:0.75rem;">${item.time || item.date || ''}</span>
+          <span class="story-category text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}</span>
+          <h4 class="story-title" style="font-size:0.95rem; margin: 6px 0;">${this.escapeHTML(item.title)}</h4>
+          <div class="card-footer-meta" style="border:none; padding-top:4px; margin-top:auto;">
+            <span class="text-muted" style="font-size:0.75rem;">${dateStr} · ${readTimeStr}</span>
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <button class="card-action-btn ${isSaved ? 'active' : ''}" onclick="app.toggleSaveArticle('${item.id}', event)" title="${isSaved ? 'Remove from saved' : 'Save article'}" aria-label="Bookmark">
+                <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}"></i>
+              </button>
+              <button class="card-action-btn" onclick="app.shareArticle('${item.id}', event)" title="Share article" aria-label="Share">
+                <i data-lucide="share-2"></i>
+              </button>
+            </div>
+          </div>
         </div>
       </div>`;
   }
@@ -1934,44 +2623,121 @@ class GlobalCoverageApp {
   }
 
   editorialCardHTML(item, opts = {}) {
+    if (!item) return '';
     const extraClass = opts.lead ? ' lead-story' : '';
+    const isSaved = this.isSaved(item.id);
+    const domainBadge = item.domain || item.category;
+    const authorName = item.author || 'Editorial Desk';
+    const dateStr = item.date || item.published || 'Recent';
+    const readTimeStr = item.readTime || '3 min read';
+    const summaryText = item.summary || item.description || '';
+
     return `
-      <div class="card-editorial${extraClass}" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button">
-        <img src="${item.image}" alt="${item.title}" loading="lazy">
+      <article class="card-editorial${extraClass}" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
+        <div class="card-editorial-thumb">
+          <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
+          <span class="card-category-chip text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}</span>
+        </div>
         <div class="card-editorial-body">
-          <span class="story-category text-${this.accentClass(item.category)}">${item.domain || item.category}</span>
-          <h3 class="card-editorial-title">${item.title}</h3>
-          <p class="text-muted story-summary">${item.summary}</p>
+          <div class="card-content-top">
+            <span class="story-category text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}</span>
+            <h3 class="card-editorial-title">${this.escapeHTML(item.title)}</h3>
+            <p class="text-muted story-summary">${this.escapeHTML(summaryText)}</p>
+          </div>
           <div class="card-footer-meta">
-            <span>By ${item.author}</span>
-            <span>${item.readTime}</span>
+            <div class="meta-info">
+              <span class="meta-author"><i data-lucide="user" class="meta-icon"></i> ${this.escapeHTML(authorName)}</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-date"><i data-lucide="clock" class="meta-icon"></i> ${dateStr}</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-readtime"><i data-lucide="book-open" class="meta-icon"></i> ${readTimeStr}</span>
+            </div>
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <button class="card-action-btn ${isSaved ? 'active' : ''}" onclick="app.toggleSaveArticle('${item.id}', event)" title="${isSaved ? 'Remove from saved' : 'Save article'}" aria-label="Bookmark">
+                <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}"></i>
+              </button>
+              <button class="card-action-btn" onclick="app.shareArticle('${item.id}', event)" title="Share article" aria-label="Share">
+                <i data-lucide="share-2"></i>
+              </button>
+            </div>
           </div>
         </div>
-      </div>`;
+      </article>`;
   }
 
   cyberCardHTML(item) {
+    if (!item) return '';
     const sevClass = 'sev-' + (item.severity || 'high').toLowerCase().replace(/\s+/g, '-');
+    const isSaved = this.isSaved(item.id);
+    const domainBadge = item.domain || item.category;
+    const authorName = item.author || 'Cyber Threat Desk';
+    const dateStr = item.date || item.published || 'Recent';
+    const readTimeStr = item.readTime || '3 min read';
+    const summaryText = item.summary || item.description || '';
+
     return `
-      <div class="card-editorial cyber-alert-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button">
-        <img src="${item.image}" alt="${item.title}" loading="lazy">
-        <div class="card-editorial-body">
-          <span class="severity-badge ${sevClass}">${item.severity || 'ALERT'}</span>
-          <h3 class="card-editorial-title">${item.title}</h3>
-          <p class="text-muted story-summary">${item.summary}</p>
-          <div class="card-footer-meta"><span>By ${item.author}</span><span>${item.date}</span></div>
+      <article class="card-editorial cyber-alert-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
+        <div class="card-editorial-thumb">
+          <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
+          <span class="card-category-chip text-red">${this.escapeHTML(domainBadge)}</span>
         </div>
-      </div>`;
+        <div class="card-editorial-body">
+          <div class="card-content-top">
+            <div class="cyber-badge-row">
+              <span class="severity-badge ${sevClass}">${item.severity || 'ALERT'}</span>
+              <span class="story-category text-red">${this.escapeHTML(domainBadge)}</span>
+            </div>
+            <h3 class="card-editorial-title">${this.escapeHTML(item.title)}</h3>
+            <p class="text-muted story-summary">${this.escapeHTML(summaryText)}</p>
+          </div>
+          <div class="card-footer-meta">
+            <div class="meta-info">
+              <span class="meta-author"><i data-lucide="shield" class="meta-icon"></i> ${this.escapeHTML(authorName)}</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-date">${dateStr}</span>
+              <span class="meta-dot">·</span>
+              <span class="meta-readtime">${readTimeStr}</span>
+            </div>
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <button class="card-action-btn ${isSaved ? 'active' : ''}" onclick="app.toggleSaveArticle('${item.id}', event)" title="${isSaved ? 'Remove from saved' : 'Save article'}" aria-label="Bookmark">
+                <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}"></i>
+              </button>
+              <button class="card-action-btn" onclick="app.shareArticle('${item.id}', event)" title="Share article" aria-label="Share">
+                <i data-lucide="share-2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>`;
   }
 
   storyHorizontalHTML(item) {
+    if (!item) return '';
+    const isSaved = this.isSaved(item.id);
+    const domainBadge = item.domain || item.category;
+    const authorName = item.author || 'Editorial Desk';
+    const dateStr = item.date || item.published || 'Recent';
+    const readTimeStr = item.readTime || '3 min read';
+    const summaryText = item.summary || item.description || '';
+
     return `
-      <div class="story-horizontal" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button">
-        <img src="${item.image}" alt="${item.title}" loading="lazy">
+      <div class="story-horizontal" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
+        <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
         <div class="story-body">
-          <span class="story-category text-${this.accentClass(item.category)}">${item.domain || item.category}${item.severity ? ' · ' + item.severity : ''}</span>
-          <h4 style="font-size:0.95rem; font-family:var(--font-heading);">${item.title}</h4>
-          <span class="text-muted" style="font-size:0.75rem;">By ${item.author} · ${item.date}</span>
+          <span class="story-category text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}${item.severity ? ' · ' + item.severity : ''}</span>
+          <h4 style="font-size:0.95rem; font-family:var(--font-heading); margin: 4px 0;">${this.escapeHTML(item.title)}</h4>
+          ${summaryText ? `<p class="text-muted story-summary-sm" style="font-size:0.8rem; margin: 2px 0 6px; line-height: 1.4;">${this.escapeHTML(summaryText.length > 110 ? summaryText.substring(0, 107) + '...' : summaryText)}</p>` : ''}
+          <div class="card-footer-meta" style="border:none; padding-top:2px; margin-top:auto;">
+            <span class="text-muted" style="font-size:0.75rem;">By ${this.escapeHTML(authorName)} · ${dateStr} · ${readTimeStr}</span>
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <button class="card-action-btn ${isSaved ? 'active' : ''}" onclick="app.toggleSaveArticle('${item.id}', event)" title="${isSaved ? 'Remove from saved' : 'Save article'}" aria-label="Bookmark">
+                <i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}"></i>
+              </button>
+              <button class="card-action-btn" onclick="app.shareArticle('${item.id}', event)" title="Share article" aria-label="Share">
+                <i data-lucide="share-2"></i>
+              </button>
+            </div>
+          </div>
         </div>
       </div>`;
   }
@@ -2045,7 +2811,137 @@ class GlobalCoverageApp {
     this.refreshIcons(container);
   }
 
-  // --- Tech / Business / Cyber / AI Home Sections ---
+  // --- Home Sections (Phase 1) ---
+  renderHomeForYou() {
+    const container = document.getElementById('home-foryou-strip');
+    if (!container) return;
+    const articles = this.getHomeArticles();
+    if (!articles.length) return;
+
+    let curated = [];
+    if (this.savedArticles.length) {
+      // Find saved articles to identify user's preferred categories
+      const savedCats = new Set(this.savedArticles.map(id => this.findArticle(id)?.category).filter(Boolean));
+      curated = articles.filter(a => savedCats.has(a.category) && !this.isSaved(a.id)).slice(0, 3);
+    }
+    if (curated.length < 3) {
+      // Fallback: pick diverse analytical stories across pillars
+      const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+      const pool = articles.filter(a => !heroIds.has(a.id) && !curated.some(c => c.id === a.id));
+      curated = [...curated, ...pool.slice(0, 3 - curated.length)];
+    }
+
+    container.innerHTML = curated.map(item => this.editorialCardHTML(item)).join('');
+    this.refreshIcons(container);
+  }
+
+  renderHomeLatestFeed() {
+    const container = document.getElementById('home-latest-feed');
+    if (!container) return;
+
+    let items = [...this.getHomeArticles()];
+
+    // Apply category filter
+    if (this.homeLatestFilter && this.homeLatestFilter !== 'all') {
+      items = items.filter(a => a.category === this.homeLatestFilter);
+    }
+
+    // Apply sorting
+    if (this.homeLatestSort === 'popular') {
+      items.sort((a, b) => {
+        const scoreB = ((b.commentsCount || 0) * 3) + ((b.savedCount || 0) * 2);
+        const scoreA = ((a.commentsCount || 0) * 3) + ((a.savedCount || 0) * 2);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        return new Date(b.publishedAt || b.date).getTime() - new Date(a.publishedAt || a.date).getTime();
+      });
+    } else {
+      // Latest first
+      items.sort((a, b) => new Date(b.publishedAt || b.date).getTime() - new Date(a.publishedAt || a.date).getTime());
+    }
+
+    if (!items.length) {
+      container.innerHTML = this.emptyStateHTML(this.homeLatestFilter === 'all' ? 'news' : this.homeLatestFilter);
+      const countEl = document.getElementById('home-latest-count');
+      if (countEl) countEl.textContent = '0 stories found';
+      const loadBtn = document.getElementById('home-load-more-btn');
+      if (loadBtn) loadBtn.style.display = 'none';
+      return;
+    }
+
+    const totalAvailable = items.length;
+    const visibleCount = Math.min(this.homeLatestPage * this.homeLatestPageSize, totalAvailable);
+    const visibleItems = items.slice(0, visibleCount);
+
+    container.innerHTML = visibleItems.map(item => this.editorialCardHTML(item)).join('');
+
+    // Update count badge
+    const countEl = document.getElementById('home-latest-count');
+    if (countEl) {
+      countEl.textContent = `Showing ${visibleItems.length} of ${totalAvailable} stories`;
+    }
+
+    // Update Load More button
+    const loadBtn = document.getElementById('home-load-more-btn');
+    if (loadBtn) {
+      loadBtn.style.display = 'inline-flex';
+      if (visibleCount >= totalAvailable) {
+        loadBtn.disabled = true;
+        loadBtn.innerHTML = `<span>All Caught Up (${totalAvailable} stories)</span> <i data-lucide="check"></i>`;
+      } else {
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = `<span class="btn-text">Load More Stories</span> <i data-lucide="arrow-down"></i>`;
+      }
+      this.refreshIcons(loadBtn);
+    }
+
+    this.refreshIcons(container);
+  }
+
+  filterHomeLatest(category, btnEl) {
+    this.homeLatestFilter = category;
+    this.homeLatestPage = 1;
+
+    // Update active chip state
+    const bar = document.getElementById('home-latest-filters');
+    if (bar) {
+      bar.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    this.renderHomeLatestFeed();
+  }
+
+  sortHomeLatest(sortType, btnEl) {
+    this.homeLatestSort = sortType;
+    this.homeLatestPage = 1;
+
+    const parent = btnEl ? btnEl.parentElement : null;
+    if (parent) {
+      parent.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+    }
+
+    this.renderHomeLatestFeed();
+  }
+
+  loadMoreLatestStories() {
+    if (this.homeLatestLoading) return;
+    const loadBtn = document.getElementById('home-load-more-btn');
+    if (loadBtn) {
+      this.homeLatestLoading = true;
+      loadBtn.classList.add('is-loading');
+      loadBtn.innerHTML = `<span>Loading...</span> <i data-lucide="loader"></i>`;
+      this.refreshIcons(loadBtn);
+    }
+
+    setTimeout(() => {
+      this.homeLatestPage += 1;
+      this.homeLatestLoading = false;
+      if (loadBtn) loadBtn.classList.remove('is-loading');
+      this.renderHomeLatestFeed();
+    }, 280);
+  }
+
   renderTechSpotlight() {
     const container = document.getElementById('tech-spotlight-container');
     if (!container) return;
@@ -2080,6 +2976,574 @@ class GlobalCoverageApp {
     const items = this.getHomeArticles().filter(a => a.category === 'AI').slice(0, 3);
     container.innerHTML = items.length ? items.map(i => this.editorialCardHTML(i)).join('') : this.emptyStateHTML('AI');
     this.refreshIcons(container);
+  }
+
+  renderTechInsights() {
+    const container = document.getElementById('tech-insights-container');
+    if (!container) return;
+    const articles = this.getHomeArticles();
+    const insights = articles.filter(a => a.category === 'IT' || a.category === 'AI').slice(5, 8);
+    if (!insights.length) {
+      container.innerHTML = this.emptyStateHTML('technology insights');
+      return;
+    }
+
+    container.innerHTML = insights.map(item => `
+      <article class="insight-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
+        <div>
+          <span class="insight-badge"><i data-lucide="cpu"></i> Deep Dive · ${this.escapeHTML(item.domain || item.category)}</span>
+          <h3 class="insight-title">${this.escapeHTML(item.title)}</h3>
+          <p class="insight-summary">${this.escapeHTML(item.summary || item.description || '')}</p>
+        </div>
+        <div class="insight-footer">
+          <span>By ${this.escapeHTML(item.author)} · ${item.readTime || '5 min read'}</span>
+          <span style="color:var(--color-royal-blue); font-weight:700; display:inline-flex; align-items:center; gap:4px;">Read Analysis <i data-lucide="arrow-right"></i></span>
+        </div>
+      </article>
+    `).join('');
+    this.refreshIcons(container);
+  }
+
+  async renderHomeDiscussions() {
+    const container = document.getElementById('home-discussions-container');
+    if (!container) return;
+
+    try {
+      const res = await fetch('/api/discussions?limit=6');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.discussions && data.discussions.length > 0) {
+          container.innerHTML = data.discussions.map(d => {
+            const commentsCount = d._count?.comments || 0;
+            return `
+              <article class="discussion-card" onclick="app.openDiscussionViewer('${d.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(d.title)}">
+                <div class="discussion-header">
+                  <span class="discussion-category-pill">${this.escapeHTML(d.category)}</span>
+                  <span class="discussion-comments-badge"><i data-lucide="message-circle"></i> ${commentsCount} ${commentsCount === 1 ? 'Reply' : 'Replies'}</span>
+                </div>
+                <h3 class="discussion-title">${this.escapeHTML(d.title)}</h3>
+                <p class="discussion-preview-body">${this.escapeHTML(d.content)}</p>
+                <div class="discussion-meta-bar">
+                  <span>By <b>${this.escapeHTML(d.author?.name || 'Reader')}</b></span>
+                  <span class="btn-join-discussion">Participate <i data-lucide="arrow-right"></i></span>
+                </div>
+              </article>
+            `;
+          }).join('');
+          this.refreshIcons(container);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Discussions fetch fallback:', e);
+    }
+
+    // Graceful fallback to existing articles
+    const articles = this.getHomeArticles();
+    const discussions = articles.slice(8, 11);
+    if (!discussions.length) {
+      container.innerHTML = this.emptyStateHTML('community discussions');
+      return;
+    }
+
+    container.innerHTML = discussions.map(item => {
+      const count = item.commentsCount || 1;
+      return `
+        <article class="discussion-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
+          <div class="discussion-header">
+            <span class="story-category text-${this.accentClass(item.category)}">${this.escapeHTML(item.domain || item.category)}</span>
+            <span class="discussion-comments-badge"><i data-lucide="message-circle"></i> ${count} ${count === 1 ? 'Perspective' : 'Perspectives'}</span>
+          </div>
+          <h3 class="discussion-title">${this.escapeHTML(item.title)}</h3>
+          <p class="discussion-prompt">What are the strategic and operational implications of this shift? Join the peer review discussion on OPEN MEDIA.</p>
+          <div class="discussion-footer">
+            <span>By ${this.escapeHTML(item.author)}</span>
+            <span class="btn-join-discussion">Join Discussion <i data-lucide="message-square"></i></span>
+          </div>
+        </article>
+      `;
+    }).join('');
+    this.refreshIcons(container);
+  }
+
+  // --- Community Polls Controller ---
+  async renderHomePolls() {
+    const container = document.getElementById('home-polls-container');
+    if (!container) return;
+
+    try {
+      const headers = this.authToken ? { 'Authorization': `Bearer ${this.authToken}` } : {};
+      const res = await fetch('/api/polls', { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.polls && data.polls.length > 0) {
+          container.innerHTML = data.polls.slice(0, 3).map(poll => {
+            const hasVoted = Boolean(poll.userVotedOptionId);
+            const isClosed = poll.status === 'CLOSED';
+
+            return `
+              <div class="poll-card" id="poll-card-${poll.id}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span class="poll-category-badge"><i data-lucide="bar-chart-2"></i> ${this.escapeHTML(poll.category || 'General')}</span>
+                  ${isClosed ? '<span style="font-size:0.7rem; font-weight:800; color:#EF4444; background:#FEE2E2; padding:2px 6px; border-radius:4px;">CLOSED</span>' : '<span style="font-size:0.7rem; font-weight:700; color:#10B981;">● LIVE VOTE</span>'}
+                </div>
+                <h3 class="poll-question">${this.escapeHTML(poll.question)}</h3>
+                <div class="poll-options-list">
+                  ${poll.options.map(opt => {
+                    const isMyVote = poll.userVotedOptionId === opt.id;
+                    const disabledClass = (hasVoted || isClosed) ? 'disabled' : '';
+                    const votedClass = isMyVote ? 'voted-option' : '';
+
+                    return `
+                      <div class="poll-option-row ${disabledClass} ${votedClass}" onclick="${(!hasVoted && !isClosed) ? `app.votePoll('${poll.id}', '${opt.id}')` : ''}" title="${hasVoted ? 'You have already voted' : isClosed ? 'Poll is closed' : 'Click to vote'}">
+                        ${hasVoted || isClosed ? `<div class="poll-progress-fill" style="width:${opt.percentage}%;"></div>` : ''}
+                        <div class="poll-option-content">
+                          <span>${this.escapeHTML(opt.text)} ${isMyVote ? '<b>(Your Vote)</b>' : ''}</span>
+                          ${hasVoted || isClosed ? `<span style="font-weight:700;">${opt.percentage}% <small style="font-weight:normal; color:#64748B;">(${opt.votes})</small></span>` : ''}
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+                <div class="poll-meta-footer">
+                  <span>Total Votes: <b>${poll.totalVotes}</b></span>
+                  <span>By ${this.escapeHTML(poll.author?.name || 'Editorial Team')}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+          this.refreshIcons(container);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Polls fetch error:', e);
+    }
+
+    container.innerHTML = `
+      <div class="poll-card">
+        <span class="poll-category-badge">Technology Pulse</span>
+        <h3 class="poll-question">Which technology will drive the largest IT infrastructure investments in 2027?</h3>
+        <div class="poll-options-list">
+          <div class="poll-option-row" onclick="app.showToast('Please sign in to vote.')"><div class="poll-option-content"><span>AI Inference Clusters</span></div></div>
+          <div class="poll-option-row" onclick="app.showToast('Please sign in to vote.')"><div class="poll-option-content"><span>Post-Quantum Cryptography</span></div></div>
+          <div class="poll-option-row" onclick="app.showToast('Please sign in to vote.')"><div class="poll-option-content"><span>Cloud Sovereignty Platforms</span></div></div>
+        </div>
+        <div class="poll-meta-footer"><span>Live Editorial Pulse</span></div>
+      </div>
+    `;
+    this.refreshIcons(container);
+  }
+
+  async votePoll(pollId, optionId) {
+    if (!this.authToken) {
+      this.showToast('Please login to participate in polls.');
+      this.openAuthModal('login');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/polls/${pollId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({ optionId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        this.showToast('Your vote has been recorded!');
+        this.renderHomePolls();
+      } else {
+        this.showToast(data.error || 'Failed to record vote');
+      }
+    } catch (e) {
+      this.showToast('Network error submitting vote');
+    }
+  }
+
+  openCreatePollModal() {
+    if (!this.authToken) {
+      this.showToast('Please login to create a poll.');
+      this.openAuthModal('login');
+      return;
+    }
+    const modal = document.getElementById('modal-create-poll');
+    if (modal) modal.classList.add('show');
+    this.updateModalOpenState(true);
+  }
+
+  closeCreatePollModal() {
+    const modal = document.getElementById('modal-create-poll');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+  }
+
+  async handleCreatePollSubmit(event) {
+    event.preventDefault();
+    if (!this.authToken) return;
+
+    const question = document.getElementById('poll-question').value.trim();
+    const category = document.getElementById('poll-category').value;
+    const optInputs = Array.from(document.querySelectorAll('.poll-opt-input'));
+    const options = optInputs.map(i => i.value.trim()).filter(Boolean);
+
+    if (options.length < 2) {
+      this.showToast('Please provide at least 2 options for the poll.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/polls', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({ question, category, options })
+      });
+      if (res.ok) {
+        this.showToast('Poll created and published!');
+        this.closeCreatePollModal();
+        this.renderHomePolls();
+      } else {
+        const data = await res.json();
+        this.showToast(data.error || 'Failed to create poll');
+      }
+    } catch (e) {
+      this.showToast('Network error creating poll');
+    }
+  }
+
+  // --- Discussion Viewer & Commenting Controller ---
+  async openDiscussionViewer(discussionId) {
+    const modal = document.getElementById('modal-discussion-viewer');
+    const content = document.getElementById('discussion-viewer-content');
+    if (!modal || !content) return;
+
+    content.innerHTML = '<div style="padding:40px; text-align:center;"><p>Loading discussion thread...</p></div>';
+    modal.classList.add('show');
+    this.updateModalOpenState(true);
+
+    try {
+      const res = await fetch(`/api/discussions/${discussionId}`);
+      if (!res.ok) {
+        content.innerHTML = '<div style="padding:40px; text-align:center;"><p>Discussion not found.</p></div>';
+        return;
+      }
+      const data = await res.json();
+      const disc = data.discussion;
+
+      const commentsHTML = (disc.comments && disc.comments.length > 0)
+        ? disc.comments.map(c => `
+          <div class="comment-card" id="disc-comment-${c.id}">
+            <div class="comment-header">
+              <div class="comment-author-info">
+                <span class="comment-avatar">${(c.author?.name || 'R').charAt(0)}</span>
+                <span class="comment-author-name">${this.escapeHTML(c.author?.name || 'Reader')}</span>
+                <span class="comment-time">${this.formatCommentTime(c.createdAt)}</span>
+              </div>
+            </div>
+            <div class="comment-content">${this.escapeHTML(c.content)}</div>
+            ${(c.replies && c.replies.length > 0) ? `
+              <div class="comment-replies-list">
+                ${c.replies.map(r => `
+                  <div class="comment-reply-card">
+                    <div class="comment-header">
+                      <div class="comment-author-info">
+                        <span class="comment-avatar" style="width:20px;height:20px;font-size:0.65rem;">${(r.author?.name || 'R').charAt(0)}</span>
+                        <span class="comment-author-name" style="font-size:0.8rem;">${this.escapeHTML(r.author?.name || 'Reader')}</span>
+                        <span class="comment-time">${this.formatCommentTime(r.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div class="comment-content" style="font-size:0.84rem;">${this.escapeHTML(r.content)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('')
+        : '<p style="color:#64748B; font-size:0.88rem; font-style:italic;">No perspectives shared yet. Be the first to join the conversation!</p>';
+
+      content.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+          <div>
+            <span class="discussion-category-pill">${this.escapeHTML(disc.category)}</span>
+            <h2 style="font-size:1.4rem; color:var(--color-deep-navy); margin:8px 0 4px;">${this.escapeHTML(disc.title)}</h2>
+            <div style="font-size:0.8rem; color:var(--color-dark-gray); display:flex; gap:12px; align-items:center;">
+              <span>By <b>${this.escapeHTML(disc.author?.name || 'Reader')}</b></span>
+              <span>•</span>
+              <span>${disc.views || 1} views</span>
+              <span>•</span>
+              <span>${disc._count?.comments || 0} perspectives</span>
+            </div>
+          </div>
+          <button class="icon-btn" onclick="app.closeDiscussionViewer()" aria-label="Close discussion"><i data-lucide="x"></i></button>
+        </div>
+        <div style="font-size:0.95rem; line-height:1.6; color:var(--color-charcoal); background:#F8FAFC; padding:18px; border-radius:var(--radius-sm); border:1px solid var(--color-border-gray); margin-bottom:24px;">
+          ${this.escapeHTML(disc.content)}
+        </div>
+
+        <div style="border-top:1px solid var(--color-border-gray); padding-top:20px;">
+          <h4 style="font-size:1rem; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+            <i data-lucide="message-square" class="text-royal-blue"></i> Discussion Thread (${disc._count?.comments || 0})
+          </h4>
+
+          <div style="margin-bottom:20px;">
+            <textarea id="disc-new-comment-input" class="form-control" rows="3" placeholder="Contribute your operational perspective or technical analysis..."></textarea>
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+              <button class="btn btn-primary btn-sm" onclick="app.submitDiscussionComment('${disc.id}')"><i data-lucide="send"></i> Post Perspective</button>
+            </div>
+          </div>
+
+          <div class="discussion-comments-thread">${commentsHTML}</div>
+        </div>
+      `;
+      this.refreshIcons(content);
+    } catch (e) {
+      content.innerHTML = '<div style="padding:40px; text-align:center;"><p>Error loading discussion.</p></div>';
+    }
+  }
+
+  closeDiscussionViewer() {
+    const modal = document.getElementById('modal-discussion-viewer');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+  }
+
+  async submitDiscussionComment(discussionId) {
+    if (!this.authToken) {
+      this.showToast('Please login to contribute to discussions.');
+      this.openAuthModal('login');
+      return;
+    }
+    const input = document.getElementById('disc-new-comment-input');
+    const content = input ? input.value.trim() : '';
+    if (!content) {
+      this.showToast('Comment cannot be empty.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/discussions/${discussionId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({ content })
+      });
+      if (res.ok) {
+        this.showToast('Perspective added to discussion!');
+        this.openDiscussionViewer(discussionId);
+      } else {
+        const data = await res.json();
+        this.showToast(data.error || 'Failed to post comment');
+      }
+    } catch (e) {
+      this.showToast('Network error posting comment');
+    }
+  }
+
+  openCreateDiscussionModal() {
+    if (!this.authToken) {
+      this.showToast('Please login to start a discussion.');
+      this.openAuthModal('login');
+      return;
+    }
+    const modal = document.getElementById('modal-create-discussion');
+    if (modal) modal.classList.add('show');
+    this.updateModalOpenState(true);
+  }
+
+  closeCreateDiscussionModal() {
+    const modal = document.getElementById('modal-create-discussion');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+  }
+
+  async handleCreateDiscussionSubmit(event) {
+    event.preventDefault();
+    if (!this.authToken) return;
+
+    const title = document.getElementById('disc-title').value.trim();
+    const category = document.getElementById('disc-category').value;
+    const content = document.getElementById('disc-content').value.trim();
+
+    try {
+      const res = await fetch('/api/discussions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({ title, category, content })
+      });
+      if (res.ok) {
+        this.showToast('Discussion topic created!');
+        this.closeCreateDiscussionModal();
+        this.renderHomeDiscussions();
+      } else {
+        const data = await res.json();
+        this.showToast(data.error || 'Failed to create discussion');
+      }
+    } catch (e) {
+      this.showToast('Network error creating discussion');
+    }
+  }
+
+  // --- User Profile & Topics Controller (Phase 3 & 4) ---
+  async openProfileModal() {
+    if (!this.authToken) {
+      this.openAuthModal('login');
+      return;
+    }
+    const modal = document.getElementById('modal-user-profile');
+    const container = document.getElementById('profile-modal-content');
+    if (!modal || !container) return;
+
+    modal.classList.add('show');
+    this.updateModalOpenState(true);
+    container.innerHTML = '<div style="padding:40px; text-align:center;"><p>Loading profile...</p></div>';
+
+    try {
+      const res = await fetch('/api/user/profile', {
+        headers: { 'Authorization': `Bearer ${this.authToken}` }
+      });
+      if (!res.ok) {
+        container.innerHTML = '<p>Error loading profile.</p>';
+        return;
+      }
+      const data = await res.json();
+      const p = data.profile;
+      const allTopics = ['AI', 'Cyber Security', 'IT', 'Business', 'Cloud', 'Data Privacy', 'Semiconductors'];
+      const followed = new Set(p.followedTopics || []);
+
+      container.innerHTML = `
+        <div class="profile-modal-body">
+          <div class="profile-avatar-row">
+            <img src="${p.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80'}" alt="Avatar" class="profile-avatar-img">
+            <div>
+              <h3 style="margin:0 0 4px; font-size:1.15rem; color:var(--color-deep-navy);">${this.escapeHTML(p.name)}</h3>
+              <p style="margin:0; font-size:0.82rem; color:var(--color-dark-gray);">${this.escapeHTML(p.email)} • <b style="color:var(--color-royal-blue);">${p.role}</b></p>
+            </div>
+          </div>
+
+          <div class="profile-stats-grid">
+            <div class="profile-stat-box"><h4>${p.stats?.savedCount || 0}</h4><p>Saved Articles</p></div>
+            <div class="profile-stat-box"><h4>${p.stats?.historyCount || 0}</h4><p>Stories Read</p></div>
+            <div class="profile-stat-box"><h4>${p.stats?.followingCount || 0}</h4><p>Authors Followed</p></div>
+          </div>
+
+          <form id="edit-profile-form" onsubmit="app.saveUserProfile(event)">
+            <div class="admin-form-group">
+              <label for="profile-name-input">Display Name</label>
+              <input type="text" id="profile-name-input" class="form-control" value="${this.escapeHTML(p.name)}" required>
+            </div>
+            <div class="admin-form-group">
+              <label for="profile-bio-input">Short Professional Bio</label>
+              <textarea id="profile-bio-input" class="form-control" rows="2" placeholder="e.g. Lead SecOps Engineer focusing on zero-trust architectures">${this.escapeHTML(p.bio || '')}</textarea>
+            </div>
+            <div class="admin-form-group">
+              <label>Followed Topic Categories (Powers your "For You" Feed)</label>
+              <div class="topic-toggle-chips">
+                ${allTopics.map(t => {
+                  const active = followed.has(t) ? 'active' : '';
+                  return `<button type="button" class="topic-toggle-chip ${active}" onclick="app.toggleFollowTopic('${t}', this)"><i data-lucide="${active ? 'check' : 'plus'}"></i> ${t}</button>`;
+                }).join('')}
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+              <button type="button" class="btn btn-outline" onclick="app.closeProfileModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i data-lucide="save"></i> Save Profile</button>
+            </div>
+          </form>
+        </div>
+      `;
+      this.refreshIcons(container);
+    } catch (e) {
+      container.innerHTML = '<p>Network error loading profile.</p>';
+    }
+  }
+
+  closeProfileModal() {
+    const modal = document.getElementById('modal-user-profile');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+  }
+
+  async toggleFollowTopic(topic, btn) {
+    if (!this.authToken) {
+      this.openAuthModal('login');
+      return;
+    }
+    try {
+      const res = await fetch('/api/user/follow-topic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({ topic })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (btn) {
+          btn.classList.toggle('active', data.isFollowing);
+          btn.innerHTML = `<i data-lucide="${data.isFollowing ? 'check' : 'plus'}"></i> ${topic}`;
+          this.refreshIcons(btn);
+        }
+        this.showToast(data.message);
+        if (this.libraryView === 'recommended') {
+          this.filterLibrary('recommended');
+        }
+      }
+    } catch (e) {
+      this.showToast('Network error updating topic');
+    }
+  }
+
+  async saveUserProfile(event) {
+    event.preventDefault();
+    if (!this.authToken) return;
+
+    const name = document.getElementById('profile-name-input').value.trim();
+    const bio = document.getElementById('profile-bio-input').value.trim();
+
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({ name, bio })
+      });
+      if (res.ok) {
+        this.showToast('Profile updated successfully!');
+        this.closeProfileModal();
+        const userNameEl = document.getElementById('menu-user-name');
+        if (userNameEl) userNameEl.textContent = name;
+      } else {
+        const data = await res.json();
+        this.showToast(data.error || 'Failed to update profile');
+      }
+    } catch (e) {
+      this.showToast('Network error saving profile');
+    }
+  }
+
+  updateCardBookmarkStates(id) {
+    const isSaved = this.isSaved(id);
+    document.querySelectorAll(`.card-action-btn[onclick*="${id}"]`).forEach(btn => {
+      if (btn.getAttribute('aria-label') === 'Bookmark') {
+        btn.classList.toggle('active', isSaved);
+        btn.title = isSaved ? 'Remove from saved' : 'Save article';
+        btn.innerHTML = `<i data-lucide="${isSaved ? 'bookmark-check' : 'bookmark'}"></i>`;
+        this.refreshIcons(btn);
+      }
+    });
   }
 
   renderMostRead() {
@@ -2118,7 +3582,7 @@ class GlobalCoverageApp {
   }
 
   // --- For You / Personalized Feed ---
-  renderForYouPage() {
+  async renderForYouPage() {
     const savedList = (GC_DATA.articles || []).filter(a => this.savedArticles.includes(a.id));
     if (this.savedArticles.length !== savedList.length) {
       this.savedArticles = savedList.map(a => a.id);
@@ -2132,15 +3596,47 @@ class GlobalCoverageApp {
 
     const feedContainer = document.getElementById('foryou-feed');
     if (feedContainer) {
-      if (this.libraryView === 'saved') {
+      if (!this.libraryView || this.libraryView === 'recommended') {
+        feedContainer.innerHTML = '<div style="padding:40px; text-align:center;"><p>Loading personalized intelligence...</p></div>';
+        try {
+          const res = await this.apiFetch('/user/for-you');
+          if (res.ok && res.data?.recommendations) {
+            const recs = res.data.recommendations;
+            feedContainer.innerHTML = recs.length ? `
+              <div class="section-header" style="border:none; margin-bottom:12px;">
+                <div>
+                  <h2 style="font-size:1.15rem; color:var(--color-deep-navy); display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="sparkles" class="text-purple"></i> Curated For You
+                  </h2>
+                  <p style="font-size:0.82rem; color:var(--color-dark-gray); margin-top:2px;">Transparent recommendations based on your followed topics, reading activity, and network.</p>
+                </div>
+              </div>
+              ${recs.map(a => `
+                <div style="margin-bottom:16px;">
+                  <div class="recommendation-attribution">
+                    <i data-lucide="compass"></i> ${this.escapeHTML(a.recommendationReason || 'Recommended For You')}
+                  </div>
+                  ${this.foryouRowHTML(a, this.isSaved(a.id) ? 'Saved' : 'Save', `app.toggleSaveArticle('${a.id}')`)}
+                </div>
+              `).join('')}
+            ` : `<div class="empty-state"><h4>No recommendations yet.</h4><p>Follow topics or bookmark stories to calibrate your personal feed.</p></div>`;
+            this.refreshIcons(feedContainer);
+          }
+        } catch (e) {
+          console.warn('For You fetch error:', e);
+        }
+      } else if (this.libraryView === 'saved') {
         feedContainer.innerHTML = savedList.length ? `
           <div class="section-header" style="border:none;"><h2 style="font-size:1.1rem;">Saved Articles</h2></div>
           ${savedList.map(a => this.foryouRowHTML(a, 'Remove', `app.toggleSaveArticle('${a.id}')`)).join('')}
         ` : `<div class="empty-state"><h4>No saved stories yet.</h4><p>Bookmark stories across OPEN MEDIA and they will appear here.</p></div>`;
       } else if (this.libraryView === 'history') {
-        const historyList = GC_DATA.articles.filter(a => this.readingHistory.includes(a.id));
+        const historyList = (this.getHomeArticles() || GC_DATA.articles).filter(a => this.readingHistory.includes(a.id));
         feedContainer.innerHTML = historyList.length ? `
-          <div class="section-header" style="border:none;"><h2 style="font-size:1.1rem;">Reading History</h2></div>
+          <div class="history-toolbar">
+            <h2 style="font-size:1.1rem; margin:0; display:flex; align-items:center; gap:8px;"><i data-lucide="clock" class="text-blue"></i> Reading History (${historyList.length})</h2>
+            <button class="btn-clear-history" onclick="app.clearReadingHistory()"><i data-lucide="trash-2"></i> Clear History</button>
+          </div>
           ${historyList.map(a => this.foryouRowHTML(a, 'Read Again', `app.openArticleModal('${a.id}')`)).join('')}
         ` : `<div class="empty-state"><h4>No reading history yet.</h4><p>Articles you open will show up here.</p></div>`;
       } else if (this.libraryView === 'events') {
@@ -2161,6 +3657,19 @@ class GlobalCoverageApp {
       } else if (this.libraryView === 'reports') {
         feedContainer.innerHTML = `<div class="empty-state"><h4>No downloaded reports yet.</h4><p>Intelligence reports you download will be listed here for offline access.</p></div>`;
       }
+    }
+
+    const topicContainer = document.getElementById('foryou-followed-topics-chips');
+    if (topicContainer) {
+      const allTopics = ['AI', 'Cyber Security', 'IT', 'Business', 'Cloud', 'Data Privacy'];
+      this.apiFetch('/user/profile').then(res => {
+        const followed = new Set(res.data?.profile?.followedTopics || []);
+        topicContainer.innerHTML = allTopics.map(t => {
+          const active = followed.has(t) ? 'active' : '';
+          return `<button type="button" class="topic-toggle-chip ${active}" onclick="app.toggleFollowTopic('${t}', this)"><i data-lucide="${active ? 'check' : 'plus'}"></i> ${t}</button>`;
+        }).join('');
+        this.refreshIcons(topicContainer);
+      }).catch(() => {});
     }
 
     const followedAuthors = Object.entries(this.followedAuthorMap || {}).map(([id, name]) => ({ id, name }));
@@ -2318,6 +3827,27 @@ class GlobalCoverageApp {
     group.querySelector('.domain-group-toggle').setAttribute('aria-expanded', String(expanded));
   }
 
+  matchesFilter(article, filter) {
+    if (!filter || filter === 'all') return true;
+
+    const canonical = BUSINESS_DOMAIN_MATCH[filter] || GROUP_MATCH[filter] || filter;
+    if (article.domain === filter || article.domain === canonical) return true;
+
+    if (article.domain && (article.domain.toLowerCase() === filter.toLowerCase() || article.domain.toLowerCase() === canonical.toLowerCase())) {
+      return true;
+    }
+
+    const kwRegex = DOMAIN_KEYWORDS[filter] || DOMAIN_KEYWORDS[canonical];
+    if (kwRegex) {
+      const text = `${article.title || ''} ${article.summary || ''} ${article.domain || ''}`.toLowerCase();
+      if (kwRegex.test(text)) return true;
+    }
+
+    const filterLower = filter.toLowerCase();
+    const fullText = `${article.title || ''} ${article.summary || ''} ${article.domain || ''}`.toLowerCase();
+    return fullText.includes(filterLower);
+  }
+
   filterCategory(type, filter, btnEl) {
     const parent = btnEl.parentElement;
     parent.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -2329,10 +3859,11 @@ class GlobalCoverageApp {
 
     const items = filter === 'all'
       ? GC_DATA.articles.filter(a => a.category === category)
-      : GC_DATA.articles.filter(a => a.category === category && a.domain === filter);
+      : GC_DATA.articles.filter(a => a.category === category && this.matchesFilter(a, filter));
 
     if (type === 'ai') {
-      feed.innerHTML = items.length ? items.map(a => this.editorialCardHTML(a)).join('') : this.emptyStateHTML('AI');
+      const displayItems = filter === 'all' && items.length > 3 ? items.slice(3, 12) : items;
+      feed.innerHTML = displayItems.length ? displayItems.map(a => this.editorialCardHTML(a)).join('') : this.emptyStateHTML('AI');
     } else {
       this.paintFeed(feed, items, type);
     }
@@ -2344,8 +3875,7 @@ class GlobalCoverageApp {
     const feed = document.getElementById(feedMap[type]);
     const canonical = BUSINESS_DOMAIN_MATCH[term] || GROUP_MATCH[term] || term;
 
-    const items = GC_DATA.articles.filter(a => a.category === category &&
-      (a.domain === term || a.domain === canonical || (a.title + ' ' + a.summary).toLowerCase().includes(term.toLowerCase())));
+    const items = GC_DATA.articles.filter(a => a.category === category && this.matchesFilter(a, term));
 
     this.paintFeed(feed, items, type);
 
@@ -2365,23 +3895,58 @@ class GlobalCoverageApp {
     const aiArticles = GC_DATA.articles.filter(a => a.category === 'AI');
     if (!aiArticles.length) return;
 
+    // 1. Featured Lead Article on the left (~60% desktop width)
     const heroStory = aiArticles[0];
-    document.getElementById('ai-hero-story').innerHTML = `
-      <img src="${heroStory.image}" alt="${heroStory.title}" loading="eager">
-      <div class="card-editorial-body">
-        <span class="story-category text-purple">${heroStory.domain}</span>
-        <h2 class="card-editorial-title" style="font-size:1.6rem;">${heroStory.title}</h2>
-        <p class="text-muted story-summary">${heroStory.summary}</p>
-        <div class="card-footer-meta"><span>By ${heroStory.author}</span><span>${heroStory.date} · ${heroStory.readTime}</span></div>
-      </div>`;
-    document.getElementById('ai-hero-story').setAttribute('onclick', `app.openArticleModal('${heroStory.id}')`);
+    const heroEl = document.getElementById('ai-hero-story');
+    if (heroEl) {
+      heroEl.innerHTML = `
+        <img src="${heroStory.image}" alt="${heroStory.title}" loading="eager">
+        <div class="card-editorial-body">
+          <span class="story-category text-purple">${heroStory.domain}</span>
+          <h2 class="card-editorial-title">${heroStory.title}</h2>
+          <p class="text-muted story-summary">${heroStory.summary}</p>
+          <div class="card-footer-meta"><span>By ${heroStory.author}</span><span>${heroStory.date} · ${heroStory.readTime}</span></div>
+        </div>`;
+      heroEl.setAttribute('onclick', `app.openArticleModal('${heroStory.id}')`);
+    }
 
-    document.getElementById('ai-secondary-stories').innerHTML = aiArticles.slice(1, 4).map(a => this.horizontalCardHTML(a)).join('');
-    document.getElementById('ai-feed').innerHTML = aiArticles.slice(0, 6).map(a => this.editorialCardHTML(a)).join('');
-    document.getElementById('ai-research-container').innerHTML = aiArticles.filter(a => a.domain === 'AI Research').map(a => this.horizontalCardHTML(a)).join('') || this.emptyStateHTML('AI research');
-    document.getElementById('ai-startups-container').innerHTML = aiArticles.filter(a => a.domain === 'AI Startups').map(a => this.horizontalCardHTML(a)).join('') || this.emptyStateHTML('AI startup');
-    document.getElementById('ai-tools-container').innerHTML = aiArticles.filter(a => a.domain === 'AI Tools & Agents').map(a => this.horizontalCardHTML(a)).join('') || this.emptyStateHTML('AI tools');
-    document.getElementById('ai-most-read-container').innerHTML = aiArticles.slice(0, 4).map((a, i) => this.mostReadItemHTML(a, i)).join('');
+    // 2. Exactly TWO secondary featured articles on the right (~40% desktop width)
+    const secondaryStoriesEl = document.getElementById('ai-secondary-stories');
+    if (secondaryStoriesEl) {
+      const secondaryArticles = aiArticles.slice(1, 3);
+      secondaryStoriesEl.innerHTML = secondaryArticles.map(a => this.horizontalCardHTML(a)).join('');
+    }
+
+    // 3. Move additional secondary articles into Latest in AI (index 3 onwards)
+    const feedEl = document.getElementById('ai-feed');
+    if (feedEl) {
+      const latestArticles = aiArticles.length > 3 ? aiArticles.slice(3, 12) : aiArticles.slice(1);
+      feedEl.innerHTML = latestArticles.map(a => this.editorialCardHTML(a)).join('');
+    }
+
+    // 4. Render category sections with automatic responsive grid (.two-cards when count === 2)
+    const renderCategoryCards = (containerId, domain, label) => {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const items = aiArticles.filter(a => a.domain === domain || (domain === 'AI Tools & Agents' && (a.domain === 'AI Tools' || a.domain === 'AI Tools & Agents')));
+      if (!items.length) {
+        el.className = 'horizontal-scroll-container empty-grid';
+        el.innerHTML = this.emptyStateHTML(label);
+        return;
+      }
+      el.className = `horizontal-scroll-container count-${items.length}${items.length === 2 ? ' two-cards' : ''}`;
+      el.innerHTML = items.map(a => this.horizontalCardHTML(a)).join('');
+    };
+
+    renderCategoryCards('ai-research-container', 'AI Research', 'AI research');
+    renderCategoryCards('ai-startups-container', 'AI Startups', 'AI startup');
+    renderCategoryCards('ai-tools-container', 'AI Tools & Agents', 'AI tools');
+
+    // 5. Most Read in AI
+    const mostReadEl = document.getElementById('ai-most-read-container');
+    if (mostReadEl) {
+      mostReadEl.innerHTML = aiArticles.slice(0, 4).map((a, i) => this.mostReadItemHTML(a, i)).join('');
+    }
 
     this.refreshIcons(document.getElementById('page-ai'));
   }
@@ -2399,6 +3964,7 @@ class GlobalCoverageApp {
       this.showToast('Article saved to your library.');
     }
     localStorage.setItem('gc_saved', JSON.stringify(this.savedArticles));
+    this.updateCardBookmarkStates(id);
     this.renderForYouPage();
     this.renderHero();
     this.refreshArticleModalIfOpen(id);
@@ -2423,6 +3989,19 @@ class GlobalCoverageApp {
   addToHistory(id) {
     this.readingHistory = [id, ...this.readingHistory.filter(h => h !== id)].slice(0, 30);
     localStorage.setItem('gc_history', JSON.stringify(this.readingHistory));
+    if (this.authToken) {
+      this.apiFetch(`/user/history/${id}`, { method: 'POST' });
+    }
+  }
+
+  async clearReadingHistory() {
+    this.readingHistory = [];
+    localStorage.removeItem('gc_history');
+    if (this.authToken) {
+      await this.apiFetch('/user/history', { method: 'DELETE' });
+    }
+    this.showToast('Reading history cleared.');
+    this.renderForYouPage();
   }
 
   // --- Author Follow Storage ---
@@ -2511,6 +4090,12 @@ class GlobalCoverageApp {
     this.activeReaderArticleId = id;
     this.addToHistory(id);
 
+    // Sync hash in browser address bar for direct shareability and back/forward navigation
+    const targetHash = `#article-${encodeURIComponent(article.id)}`;
+    if (window.location.hash !== targetHash) {
+      window.history.pushState({ articleId: article.id }, '', targetHash);
+    }
+
     const modal = document.getElementById('article-modal');
     const content = document.getElementById('article-modal-content');
     const related = GC_DATA.articles.filter(a => a.category === article.category && a.id !== id).slice(0, 3);
@@ -2540,10 +4125,29 @@ class GlobalCoverageApp {
           ${tags.map(t => `<span class="article-tag">${t}</span>`).join('')}
         </div>
         <div class="article-actions">
-          <button class="btn btn-primary btn-sm" onclick="app.runAIFunction('summarize')"><i data-lucide="sparkles"></i> Summarize with AI</button>
           ${this.getCurrentUser() ? `<button class="btn btn-outline btn-sm" onclick="app.toggleSaveArticle('${article.id}')"><i data-lucide="${this.isSaved(article.id) ? 'bookmark-check' : 'bookmark'}"></i> ${this.isSaved(article.id) ? 'Saved' : 'Save'}</button>` : ''}
           <button class="btn btn-outline btn-sm" onclick="app.shareArticle('${article.id}')"><i data-lucide="share-2"></i> Share</button>
         </div>
+
+        <!-- Article Reactions Bar (Phase 2) -->
+        <div class="article-reactions-wrapper" id="reactions-wrapper-${article.id}">
+          <div class="reactions-header">
+            <span><i data-lucide="smile"></i> Reader Reactions</span>
+            <span id="reactions-total-${article.id}" class="text-muted" style="font-size:0.75rem;">0 Reactions</span>
+          </div>
+          <div class="reactions-btn-group" id="reactions-btn-group-${article.id}">
+            <button class="reaction-btn" id="rx-btn-like-${article.id}" onclick="app.toggleArticleReaction('${article.id}', 'LIKE')" title="Like this article">
+              <span class="reaction-icon">👍</span> <span>Like</span> <span class="reaction-count" id="rx-count-like-${article.id}">0</span>
+            </button>
+            <button class="reaction-btn" id="rx-btn-insightful-${article.id}" onclick="app.toggleArticleReaction('${article.id}', 'INSIGHTFUL')" title="Mark as Insightful">
+              <span class="reaction-icon">💡</span> <span>Insightful</span> <span class="reaction-count" id="rx-count-insightful-${article.id}">0</span>
+            </button>
+            <button class="reaction-btn" id="rx-btn-helpful-${article.id}" onclick="app.toggleArticleReaction('${article.id}', 'HELPFUL')" title="Mark as Helpful">
+              <span class="reaction-icon">🤝</span> <span>Helpful</span> <span class="reaction-count" id="rx-count-helpful-${article.id}">0</span>
+            </button>
+          </div>
+        </div>
+
         ${related.length ? `
         <div class="related-stories-block">
           <h4>Related Stories</h4>
@@ -2557,12 +4161,19 @@ class GlobalCoverageApp {
           <div class="comments-header">
             <h3><i data-lucide="message-square"></i> Reader Discussion (<span id="comment-count-${article.id}">0</span>)</h3>
           </div>
-          <form class="comment-form" onsubmit="app.handleCommentSubmit(event, '${article.id}')">
-            <textarea id="comment-input-${article.id}" placeholder="Join the discussion${this.currentUser?.name ? ` as ${this.escapeHTML(this.currentUser.name)}` : ''}..." required></textarea>
-            <div style="display:flex; justify-content:flex-end;">
-              <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="send"></i> Post Comment</button>
+          ${this.currentUser ? `
+            <form class="comment-form" onsubmit="app.handleCommentSubmit(event, '${article.id}')">
+              <textarea id="comment-input-${article.id}" placeholder="Join the discussion as ${this.escapeHTML(this.currentUser.name)}..." required></textarea>
+              <div style="display:flex; justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="send"></i> Post Comment</button>
+              </div>
+            </form>
+          ` : `
+            <div style="padding:14px 18px; background:#F8FAFC; border:1px dashed var(--color-border-gray); border-radius:var(--radius-sm); margin-bottom:20px; text-align:center;">
+              <p style="margin-bottom:8px; font-size:0.88rem; color:var(--color-dark-gray);">Join our verified reader community to participate in discussions, post replies, and share technical critique.</p>
+              <button class="btn btn-primary btn-sm" onclick="app.openAuthModal('login')"><i data-lucide="log-in"></i> Sign In to Comment</button>
             </div>
-          </form>
+          `}
           <div class="comments-list" id="comments-list-${article.id}">
             <div style="text-align:center; padding:18px; color:var(--color-dark-gray); font-size:0.85rem;">Loading discussion...</div>
           </div>
@@ -2574,6 +4185,7 @@ class GlobalCoverageApp {
     this.updateModalOpenState(true);
     this.refreshIcons(content);
     this.loadArticleComments(article.id);
+    this.loadArticleReactions(article.id);
   }
 
   refreshArticleModalIfOpen(id) {
@@ -2581,45 +4193,21 @@ class GlobalCoverageApp {
     if (modal.classList.contains('show')) this.openArticleModal(id);
   }
 
-  closeArticleModal() {
+  closeArticleModal(updateHistory = true) {
     this.activeReaderArticleId = null;
-    document.getElementById('article-modal').classList.remove('show');
+    const modal = document.getElementById('article-modal');
+    if (modal) modal.classList.remove('show');
     this.updateModalOpenState(false);
+
+    if (updateHistory && (window.location.hash || '').startsWith('#article-')) {
+      const returnPage = this.currentPage || 'home';
+      window.history.replaceState(null, '', `#${returnPage}`);
+    }
   }
 
-  async shareArticle(id) {
-    const article = this.findArticle(id);
-    const shareData = {
-      title: article?.title || 'OPEN MEDIA',
-      text: article?.summary || article?.description || 'Global technology, business, and cybersecurity intelligence.',
-      url: window.location.href
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        this.showToast('Article shared.');
-        return;
-      }
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(`${shareData.title}\n${shareData.url}`);
-        this.showToast('Link copied to clipboard.');
-        return;
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-    }
-
-    const fallback = document.createElement('textarea');
-    fallback.value = `${shareData.title}\n${shareData.url}`;
-    fallback.setAttribute('readonly', '');
-    fallback.style.position = 'fixed';
-    fallback.style.opacity = '0';
-    document.body.appendChild(fallback);
-    fallback.select();
-    document.execCommand('copy');
-    fallback.remove();
-    this.showToast('Link copied to clipboard.');
+  shareArticle(id, evt) {
+    if (evt) evt.stopPropagation();
+    this.openShareModal(id);
   }
 
   openEventModal(eventId) {
@@ -2669,7 +4257,7 @@ class GlobalCoverageApp {
         sections: [
           ['Our mission', 'OPEN MEDIA helps readers understand the forces shaping the modern world. We turn complex developments into clear, useful reporting for students, professionals, builders, and curious readers everywhere.'],
           ['What we cover', 'Our newsroom follows artificial intelligence, IT and innovation, cloud computing, semiconductors, startups, business strategy, markets, leadership, and cybersecurity threats. Coverage combines daily updates with context, analysis, and practical takeaways.'],
-          ['Built for informed decisions', 'Explore focused category feeds, save stories to your personal library, follow expert contributors, and use the AI News Teller to ask questions about the newsroom. It can help summarize stories, explain technical topics, find related coverage, and recommend what to read next.'],
+          ['Built for informed decisions', 'Explore focused category feeds, save stories to your personal library, follow expert contributors, and stay informed with trusted journalism across the OPEN MEDIA newsroom.'],
           ['Our commitment', 'We value accuracy, independence, responsible technology reporting, and respect for our readers. OPEN MEDIA clearly separates reported information from analysis and updates coverage when better information becomes available.']
         ]
       },
@@ -2742,288 +4330,28 @@ class GlobalCoverageApp {
   }
 
   closeAllModals() {
-    document.querySelectorAll('.modal-overlay, .ai-teller-drawer, .ai-drawer-overlay, .mobile-drawer, .mobile-drawer-overlay').forEach(el => {
+    this.activeReaderArticleId = null;
+    document.querySelectorAll('.modal-overlay, .mobile-drawer, .mobile-drawer-overlay').forEach(el => {
       el.classList.remove('show', 'active', 'dimmed');
     });
     document.body.classList.remove('modal-open', 'dimmed');
     document.documentElement.classList.remove('modal-open', 'dimmed');
     this.updateModalOpenState(false);
-  }
-
-  // --- AI News Teller ---
-  toggleAITeller(forceState = null) {
-    const drawer = document.getElementById('ai-teller-drawer');
-    const overlay = document.getElementById('ai-drawer-overlay');
-    if (!drawer) return;
-    const isShowing = forceState !== null ? forceState : !drawer.classList.contains('show');
-    drawer.classList.toggle('show', isShowing);
-    drawer.classList.toggle('active', isShowing);
-    if (overlay) {
-      overlay.classList.toggle('show', isShowing);
-      overlay.classList.toggle('active', isShowing);
-    }
-    this.updateModalOpenState(isShowing);
-    if (isShowing) {
-      this.renderAIChat();
-      document.getElementById('ai-ask-input')?.focus();
-      this.refreshIcons(drawer);
+    if ((window.location.hash || '').startsWith('#article-')) {
+      const returnPage = this.currentPage || 'home';
+      window.history.replaceState(null, '', `#${returnPage}`);
     }
   }
 
-  renderAIChat() {
-    const output = document.getElementById('ai-output-box');
-    if (!output) return;
-    const messages = this.aiChat.length ? this.aiChat : [{ role: 'assistant', content: 'I can search the OPEN MEDIA newsroom, summarize stories, compare topics, and recommend what to read next.' }];
-    output.innerHTML = messages.map(message => `<div class="ai-message ai-message-${message.role}">${this.escapeHTML(message.content).replace(/\n/g, '<br>')}</div>`).join('');
-    output.scrollTop = output.scrollHeight;
-  }
+  // --- AI Features (Safely Removed) ---
+  toggleAITeller() {}
+  renderAIChat() {}
+  addAIMessage() {}
+  summarizeAITeller() {}
+  runAIFunction() {}
+  askAI() {}
+  handleAIAsk(e) { if (e?.preventDefault) e.preventDefault(); }
 
-  escapeHTML(value) {
-    return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
-  }
-
-  addAIMessage(role, content) {
-    this.aiChat.push({ role, content });
-    this.aiChat = this.aiChat.slice(-20);
-    localStorage.setItem('gc_ai_chat', JSON.stringify(this.aiChat));
-    this.renderAIChat();
-  }
-
-  async summarizeAITeller(triggerBtn = null) {
-    const btn = triggerBtn || document.getElementById('home-summarize-btn') || document.getElementById('btn-ai-summarize');
-    let originalHtml = '';
-    if (btn) {
-      originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Summarizing...`;
-      this.refreshIcons(btn);
-    }
-
-    const homeBox = document.getElementById('ai-home-summary-box');
-    const homeContent = document.getElementById('ai-home-summary-content');
-    if (homeBox && homeContent) {
-      homeBox.style.display = 'block';
-      homeContent.innerHTML = `<div class="ai-thinking"><i data-lucide="loader-2" class="spin"></i> Synthesizing latest news intelligence from the newsroom...</div>`;
-      this.refreshIcons(homeContent);
-      homeBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    const output = document.getElementById('ai-output-box');
-    if (output) {
-      this.addAIMessage('user', 'Summarize the latest important news in two short paragraphs.');
-      output.insertAdjacentHTML('beforeend', '<div class="ai-thinking"><i data-lucide="loader-2" class="spin"></i> Generating executive summary...</div>');
-      output.scrollTop = output.scrollHeight;
-      this.refreshIcons(output);
-    }
-
-    let summary = '';
-    try {
-      // 1. Attempt fetch request to backend API
-      try {
-        const response = await fetch(`${this.apiBase}/articles/summarize`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: 'Summarize latest news' })
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.summary) {
-            summary = data.summary;
-          }
-        }
-      } catch (networkError) {
-        console.warn('Backend summarize endpoint offline or unreachable:', networkError);
-        this.showToast('Notice: Live AI service offline. Summarizing loaded newsroom coverage.', 'info');
-      }
-
-      // 2. Fallback to local AI news synthesis if backend was unavailable
-      if (!summary) {
-        summary = this.localAIAnswer('summarize');
-      }
-
-      // 3. Render summary into home page summary box
-      if (homeContent) {
-        homeContent.innerHTML = `<div class="ai-summary-text">${this.escapeHTML(summary).replace(/\n/g, '<br>')}</div>`;
-      }
-
-      // 4. Also register message in AI chat drawer
-      this.aiChat = this.aiChat.filter(message => message.content !== 'Generating executive summary...');
-      this.addAIMessage('assistant', summary);
-      this.showToast('News summary generated successfully!');
-    } catch (error) {
-      console.error('Error generating AI summary:', error);
-      this.showToast('Failed to generate AI summary: ' + (error.message || 'Network error'), 'error');
-      if (homeContent) {
-        homeContent.innerHTML = `<div class="ai-error-text text-red"><i data-lucide="alert-circle"></i> Unable to generate summary at this time. Please check your network connection.</div>`;
-        this.refreshIcons(homeContent);
-      }
-    } finally {
-      if (output) {
-        const thinkingEls = output.querySelectorAll('.ai-thinking');
-        thinkingEls.forEach(el => el.remove());
-      }
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-        this.refreshIcons(btn);
-      }
-    }
-  }
-
-  async runAIFunction(type, triggerBtn = null) {
-    if (type === 'summarize') {
-      await this.summarizeAITeller(triggerBtn);
-      return;
-    }
-    const prompts = {
-      summarize: 'Summarize the latest important news in two short paragraphs.',
-      takeaways: 'What are the key takeaways from the latest technology and cybersecurity news?',
-      explain: 'Explain the most important current news simply for a beginner.',
-      translate: 'Translate a brief summary of the latest news into Hindi.',
-      recommend: 'Recommend three stories I should read next and explain why.',
-      readAloud: 'Give me a concise briefing of the latest news to read aloud.'
-    };
-    await this.askAI(prompts[type] || prompts.summarize, type === 'readAloud', triggerBtn);
-  }
-
-  async askAI(question, readAloud = false, triggerBtn = null) {
-    const q = question.trim();
-    if (!q) return;
-
-    let originalBtnHtml = '';
-    if (triggerBtn) {
-      originalBtnHtml = triggerBtn.innerHTML;
-      triggerBtn.disabled = true;
-      triggerBtn.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Processing...`;
-      this.refreshIcons(triggerBtn);
-    }
-
-    this.addAIMessage('user', q);
-    const output = document.getElementById('ai-output-box');
-    if (output) {
-      output.insertAdjacentHTML('beforeend', '<div class="ai-thinking"><i data-lucide="loader-2" class="spin"></i> Searching the newsroom...</div>');
-      output.scrollTop = output.scrollHeight;
-      this.refreshIcons(output);
-    }
-
-    let answer;
-    try {
-      const endpoint = window.OPEN_MEDIA_AI_ENDPOINT || `${this.apiBase}/articles/summarize`;
-      try {
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, messages: this.aiChat, articles: this.aiContext() })
-        });
-        if (response.ok) {
-          const data = await response.json();
-          answer = data.answer || data.summary || data.message || data.content;
-        }
-      } catch (err) {
-        console.warn('Live AI endpoint unreachable, using local news synthesis:', err);
-      }
-
-      if (!answer) {
-        answer = this.localAIAnswer(q);
-      }
-    } catch (err) {
-      console.error('askAI error:', err);
-      this.showToast('Network error during AI request. Using local news synthesis.', 'warning');
-      answer = this.localAIAnswer(q);
-    } finally {
-      if (output) {
-        const thinkingEls = output.querySelectorAll('.ai-thinking');
-        thinkingEls.forEach(el => el.remove());
-      }
-      if (triggerBtn) {
-        triggerBtn.disabled = false;
-        triggerBtn.innerHTML = originalBtnHtml;
-        this.refreshIcons(triggerBtn);
-      }
-    }
-
-    this.addAIMessage('assistant', answer || 'I could not find an answer in the current newsroom. Try asking about AI, business, cloud, or cybersecurity.');
-    if (readAloud && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(answer));
-    }
-  }
-
-  aiContext() {
-    return GC_DATA.articles.slice(0, 24).map(article => ({ title: article.title, summary: article.summary, category: article.category, domain: article.domain, date: article.date }));
-  }
-
-  localAIAnswer(question) {
-    const query = question.toLowerCase().trim();
-    const context = this.aiContext();
-
-    // 1. Summarize intent
-    if (/summarize|executive summary|briefing|summary|overview/.test(query) || query === 'summarize') {
-      const topStories = context.slice(0, 4);
-      return `**Executive Intelligence Briefing**:\n\n` +
-        `• **Technology & AI**: ${topStories[0]?.title || 'Frontier AI developments continue to accelerate across enterprise sectors.'} — ${topStories[0]?.summary || ''}\n\n` +
-        `• **Cybersecurity & Threat Defense**: ${topStories[1]?.title || 'Threat intelligence teams monitor critical infrastructure vectors.'} — ${topStories[1]?.summary || ''}\n\n` +
-        `• **Enterprise & Markets**: ${topStories[2]?.title || 'Corporate investments and hardware scaling lead industry announcements.'} — ${topStories[2]?.summary || ''}\n\n` +
-        `*Synthesized across ${context.length} current newsroom intelligence reports.*`;
-    }
-
-    // 2. Key Takeaways intent
-    if (/takeaway|key point|bullet|highlights/.test(query) || query.includes('takeaways')) {
-      const top = context.slice(0, 3);
-      return `**Key Intelligence Takeaways**:\n\n` +
-        top.map((art, i) => `${i + 1}. **${art.title}**\n   ${art.summary}`).join('\n\n');
-    }
-
-    // 3. Explain Simply intent
-    if (/explain|simple|beginner|plain/.test(query) || query.includes('explain')) {
-      const art = context[0];
-      return `**In Simple Terms**:\n\n` +
-        `Today's major headline is **"${art?.title || 'technology and security updates'}"**.\n\n` +
-        `In plain language, governments and leading technology companies are setting up unified safety guardrails and software updates to keep artificial intelligence and computer networks safe. At the same time, businesses are doubling their budgets for automated tools that can handle operations faster.\n\n` +
-        `Context: ${art?.summary || 'New international agreements and technologies are being deployed to balance rapid innovation with enterprise safety.'}`;
-    }
-
-    // 4. Translate intent
-    if (/translate|hindi|bhasha|anuvad/.test(query) || query.includes('translate')) {
-      const top = context.slice(0, 3);
-      return `**मुख्य समाचार सारांश (Hindi Intelligence Briefing)**:\n\n` +
-        `1. **${top[0]?.title || 'प्रौद्योगिकी समाचार'}**: वैश्विक तकनीकी मंचों पर कृत्रिम बुद्धिमत्ता (AI) के सुरक्षा मानकों और नए नियमों पर सहमति बन रही है।\n\n` +
-        `2. **${top[1]?.title || 'साइबर सुरक्षा'}**: औद्योगिक नेटवर्किंग और बुनियादी ढांचे में संभावित साइबर सुरक्षा खतरों के खिलाफ सुरक्षात्मक उपाय किए जा रहे हैं।\n\n` +
-        `3. **${top[2]?.title || 'बाज़ार और व्यापार'}**: एंटरप्राइज ऑटोमेशन और नई तकनीकों में कॉरपोरेट निवेश तेज़ी से बढ़ रहा है।`;
-    }
-
-    // 5. Recommend intent
-    if (/recommend|read next|suggest|what to read/.test(query) || query.includes('recommend')) {
-      return `**Recommended Reading from the Newsroom**:\n\n` +
-        context.slice(0, 3).map((article, i) => `${i + 1}. **${article.title}** (${article.category} · ${article.domain})\n   *Why read*: ${article.summary}`).join('\n\n');
-    }
-
-    // 6. Read aloud intent
-    if (/read aloud|audio|listen|spoken/.test(query) || query.includes('read aloud')) {
-      const top = context.slice(0, 2);
-      return `Here is your OPEN MEDIA briefing. First: ${top[0]?.title}. ${top[0]?.summary} Second: ${top[1]?.title}. ${top[1]?.summary} That concludes your executive update.`;
-    }
-
-    // 7. General keyword search across articles
-    const matches = context.filter(article =>
-      `${article.title} ${article.summary} ${article.category} ${article.domain}`.toLowerCase().includes(query) ||
-      query.split(/\s+/).some(word => word.length > 3 && `${article.title} ${article.summary} ${article.category} ${article.domain}`.toLowerCase().includes(word))
-    ).slice(0, 3);
-
-    if (matches.length) {
-      return matches.map((article, i) => `${i + 1}. **${article.title}** (${article.category} · ${article.date})\n${article.summary}`).join('\n\n');
-    }
-
-    return `I searched the newsroom for "${question}". While an exact match wasn't found, our top stories right now cover **AI governance**, **cloud infrastructure**, **zero-day cyber alerts**, and **enterprise funding**. Try asking about one of these topics!`;
-  }
-
-  handleAIAsk(e) {
-    e.preventDefault();
-    const input = document.getElementById('ai-ask-input');
-    const question = input.value.trim();
-    input.value = '';
-    this.askAI(question);
-  }
 
   // --- Search Overlay ---
   openSearch() {
@@ -3053,35 +4381,51 @@ class GlobalCoverageApp {
     }
 
     const q = query.toLowerCase();
-    const articleMatches = GC_DATA.articles.filter(a => a.title.toLowerCase().includes(q) || a.category.toLowerCase().includes(q) || (a.domain || '').toLowerCase().includes(q));
-    const eventMatches = GC_DATA.events.filter(e => e.title.toLowerCase().includes(q));
-    const authorMatches = GC_DATA.authors.filter(a => a.name.toLowerCase().includes(q));
+    const articles = this.getHomeArticles();
+    const articleMatches = articles.filter(a => 
+      a.title.toLowerCase().includes(q) || 
+      (a.summary && a.summary.toLowerCase().includes(q)) || 
+      a.category.toLowerCase().includes(q) || 
+      (a.domain && a.domain.toLowerCase().includes(q)) ||
+      (a.author && a.author.toLowerCase().includes(q))
+    );
+    const eventMatches = (GC_DATA.events || []).filter(e => e.title.toLowerCase().includes(q) || (e.description && e.description.toLowerCase().includes(q)));
+    const authorMatches = (GC_DATA.authors || []).filter(a => a.name.toLowerCase().includes(q));
 
     if (!articleMatches.length && !eventMatches.length && !authorMatches.length) {
-      area.innerHTML = `<div class="empty-state"><h4>No stories found.</h4><p>Try another keyword or explore a category.</p></div>`;
+      area.innerHTML = `<div class="empty-state"><h4>No stories found for "${this.escapeHTML(query)}"</h4><p>Try searching for a technology topic, company, author, or cyber vulnerability.</p></div>`;
       return;
     }
 
     let html = '';
     if (articleMatches.length) {
-      html += articleMatches.slice(0, 8).map(m => `
+      html += `<div class="search-section-label" style="font-size:0.72rem; font-weight:800; text-transform:uppercase; color:var(--color-dark-gray); letter-spacing:0.04em; margin:12px 0 6px;">Articles (${articleMatches.length})</div>`;
+      html += articleMatches.slice(0, 10).map(m => `
         <div class="search-result-item" onclick="app.closeSearch(); app.openArticleModal('${m.id}')">
-          <span class="story-category text-${this.accentClass(m.category)}">${m.category}</span>
-          <h4 style="font-size:0.95rem; font-family:var(--font-heading);">${this.highlight(m.title, query)}</h4>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span class="story-category text-${this.accentClass(m.category)}">${this.escapeHTML(m.domain || m.category)}</span>
+            <span class="text-muted" style="font-size:0.75rem;">${m.readTime || '3 min read'}</span>
+          </div>
+          <h4 style="font-size:0.95rem; font-family:var(--font-heading); margin-bottom:4px;">${this.highlight(m.title, query)}</h4>
+          <span class="text-muted" style="font-size:0.75rem;">By ${this.escapeHTML(m.author)} · ${m.date || 'Recent'}</span>
         </div>`).join('');
     }
     if (eventMatches.length) {
+      html += `<div class="search-section-label" style="font-size:0.72rem; font-weight:800; text-transform:uppercase; color:var(--color-dark-gray); letter-spacing:0.04em; margin:14px 0 6px;">Webinars &amp; Events (${eventMatches.length})</div>`;
       html += eventMatches.map(m => `
         <div class="search-result-item" onclick="app.closeSearch(); app.openEventModal('${m.id}')">
-          <span class="story-category text-purple">Event</span>
+          <span class="story-category text-purple">Event · ${this.escapeHTML(m.category || 'Tech')}</span>
           <h4 style="font-size:0.95rem; font-family:var(--font-heading);">${this.highlight(m.title, query)}</h4>
+          <span class="text-muted" style="font-size:0.75rem;">${m.date || 'Upcoming'}</span>
         </div>`).join('');
     }
     if (authorMatches.length) {
+      html += `<div class="search-section-label" style="font-size:0.72rem; font-weight:800; text-transform:uppercase; color:var(--color-dark-gray); letter-spacing:0.04em; margin:14px 0 6px;">Authors (${authorMatches.length})</div>`;
       html += authorMatches.map(m => `
         <div class="search-result-item" onclick="app.closeSearch(); app.navigateTo('foryou')">
           <span class="story-category text-blue">Author</span>
           <h4 style="font-size:0.95rem; font-family:var(--font-heading);">${this.highlight(m.name, query)}</h4>
+          <span class="text-muted" style="font-size:0.75rem;">${this.escapeHTML(m.role || 'Contributor')}</span>
         </div>`).join('');
     }
     area.innerHTML = html;
@@ -3094,9 +4438,50 @@ class GlobalCoverageApp {
   }
 
   // --- Notifications (Dynamic & Zero-Mock) ---
-  openNotifications() {
+  async openNotifications() {
     const list = document.getElementById('notif-list-container');
     if (!list) return;
+
+    document.getElementById('notifications-modal').classList.add('show');
+    this.updateModalOpenState(true);
+
+    if (this.authToken) {
+      try {
+        const res = await this.apiFetch('/notifications');
+        if (res.ok && res.data?.notifications) {
+          const notifs = res.data.notifications;
+          const unread = res.data.unreadCount || 0;
+          const countEl = document.getElementById('notif-count');
+          if (countEl) {
+            countEl.textContent = unread;
+            countEl.style.display = unread > 0 ? 'inline-block' : 'none';
+          }
+
+          if (notifs.length > 0) {
+            list.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #E2E8F0;">
+                <span style="font-size:0.8rem; font-weight:700; color:#64748B;">${unread} unread</span>
+                <button class="btn btn-outline btn-sm" onclick="app.markAllNotificationsRead()" style="font-size:0.75rem; padding:3px 8px;">Mark All Read</button>
+              </div>
+              ${notifs.map(n => `
+                <div class="notif-item ${n.isRead ? '' : 'unread'}" style="background:${n.isRead ? 'transparent' : '#F0F9FF'}; border-radius:6px; padding:10px; margin-bottom:6px;">
+                  <div class="notif-icon" style="background:#DBEAFE;"><i data-lucide="bell" class="text-blue"></i></div>
+                  <div>
+                    <div class="notif-title-row" style="font-weight:700; font-size:0.88rem;">${this.escapeHTML(n.title)}</div>
+                    <p style="font-size:0.84rem; margin:2px 0 4px;">${this.escapeHTML(n.message)}</p>
+                    <div class="notif-time" style="font-size:0.72rem; color:#94A3B8;">${new Date(n.createdAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</div>
+                  </div>
+                </div>
+              `).join('')}
+            `;
+            this.refreshIcons(list);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Notifications fetch fallback:', e);
+      }
+    }
 
     const notifs = (this.notifications && this.notifications.length) ? this.notifications : [
       { icon: 'shield-alert', cls: 'text-red', bg: '#FEE2E2', title: 'EDITORIAL SYSTEM ACTIVE', body: 'Live newsroom synchronized with real-time editorial websocket pipeline.', time: 'Just now' },
@@ -3114,13 +4499,17 @@ class GlobalCoverageApp {
       </div>
     `).join('');
 
-    document.getElementById('notifications-modal').classList.add('show');
-    this.updateModalOpenState(true);
-
     this.notifCount = 0;
     const countEl = document.getElementById('notif-count');
     if (countEl) countEl.style.display = 'none';
     this.refreshIcons(list);
+  }
+
+  async markAllNotificationsRead() {
+    if (!this.authToken) return;
+    await this.apiFetch('/notifications/read-all', { method: 'POST' });
+    this.showToast('All notifications marked as read.');
+    this.openNotifications();
   }
 
   closeNotifications() {
@@ -3471,9 +4860,10 @@ class GlobalCoverageApp {
       const field = document.getElementById(id);
       field.value = field.value.trim();
       values[key] = field.value;
-      if (key === 'phone') {
-        const digitCount = field.value.replace(/\D/g, '').length;
-        field.setCustomValidity(digitCount >= 7 && digitCount <= 15 ? '' : 'Enter a valid contact number with 7 to 15 digits.');
+      if (id === 'contact-phone') {
+        field.setCustomValidity(/^[0-9]{10}$/.test(field.value) ? '' : 'Enter a valid 10-digit contact number.');
+      } else if (id === 'adv-name') {
+        field.setCustomValidity(/^[A-Za-z ]+$/.test(field.value) ? '' : 'Enter a name using letters and spaces only.');
       }
     });
     if (!form.checkValidity()) {
@@ -3590,8 +4980,19 @@ class GlobalCoverageApp {
     else this.showToast(res.data?.error || 'Unable to create account.');
   }
   toggleMobileNav() {
-    document.getElementById('mobile-drawer').classList.toggle('show');
-    document.getElementById('mobile-drawer-overlay').classList.toggle('show');
+    const drawer = document.getElementById('mobile-drawer');
+    if (!drawer) return;
+    if (drawer.classList.contains('show')) {
+      this.closeMobileNav();
+      return;
+    }
+    drawer.classList.add('show');
+    document.getElementById('mobile-drawer-overlay')?.classList.add('show');
+  }
+
+  closeMobileNav() {
+    document.getElementById('mobile-drawer')?.classList.remove('show');
+    document.getElementById('mobile-drawer-overlay')?.classList.remove('show');
   }
 
   toggleProfileMenu() {

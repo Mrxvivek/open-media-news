@@ -4,46 +4,62 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
 }
 
 model User {
-  id           String         @id @default(uuid())
-  name         String
-  email        String         @unique
-  passwordHash String
-  role         String         @default("USER") // USER | PUBLISHER | ADMIN
-  isRootAdmin  Boolean        @default(false)
-  rootAdminMarker String?     @unique // Hard database-level constraint: exactly one non-null 'PRIMARY_ROOT_ADMIN'
-  createdAt    DateTime       @default(now())
+  id              String         @id @default(uuid())
+  name            String
+  email           String         @unique
+  passwordHash    String
+  role            String         @default("USER") // USER | PUBLISHER | ADMIN
+  isRootAdmin     Boolean        @default(false)
+  rootAdminMarker String?        @unique // Hard database-level constraint: exactly one non-null 'PRIMARY_ROOT_ADMIN'
+  bio             String?
+  avatarUrl       String?
+  followedTopics  String?        @default("[]") // JSON string array of topics/categories
+  createdAt       DateTime       @default(now())
 
-  articles     Article[]      @relation("AuthorArticles")
-  comments     Comment[]
-  savedArticles SavedArticle[]
-  following    AuthorFollow[] @relation("FollowerRelation")
-  followers    AuthorFollow[] @relation("AuthorRelation")
-  events       Event[]        @relation("EventOrganizer")
+  articles            Article[]            @relation("AuthorArticles")
+  comments            Comment[]
+  savedArticles       SavedArticle[]
+  following           AuthorFollow[]       @relation("FollowerRelation")
+  followers           AuthorFollow[]       @relation("AuthorRelation")
+  events              Event[]              @relation("EventOrganizer")
+  reactions           Reaction[]
+  readingHistory      ReadingHistory[]
+  reports             CommentReport[]
+  discussions         Discussion[]
+  discussionComments  DiscussionComment[]
+  discussionReports   DiscussionReport[]
+  createdPolls        Poll[]
+  pollVotes           PollVote[]
+  notifications       Notification[]
+  notificationSetting NotificationSetting?
 }
 
 model Article {
-  id          String        @id @default(uuid())
-  title       String
-  slug        String        @unique
-  summary     String
-  body        String
-  image       String?
-  category    String
-  domain      String?
-  status      String        @default("PENDING") // DRAFT | PENDING | PUBLISHED | REJECTED | CHANGES_REQUESTED | TAKEN_DOWN
+  id                String         @id @default(uuid())
+  title             String
+  slug              String         @unique
+  summary           String
+  body              String
+  image             String?
+  category          String
+  domain            String?
+  status            String         @default("PENDING") // DRAFT | PENDING | PUBLISHED | REJECTED | CHANGES_REQUESTED | TAKEN_DOWN
   editorialFeedback String?
-  authorId    String
-  author      User          @relation("AuthorArticles", fields: [authorId], references: [id], onDelete: Cascade)
-  publishedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  authorId          String
+  author            User           @relation("AuthorArticles", fields: [authorId], references: [id], onDelete: Cascade)
+  publishedAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  comments    Comment[]
-  savedBy     SavedArticle[]
+  comments       Comment[]
+  savedBy        SavedArticle[]
+  reactions      Reaction[]
+  readingHistory ReadingHistory[]
 }
 
 model Event {
@@ -62,13 +78,49 @@ model Event {
 }
 
 model Comment {
-  id        String   @id @default(uuid())
+  id        String          @id @default(uuid())
   content   String
   articleId String
-  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?        @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]       @relation("CommentReplies")
+  isEdited  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @default(now()) @updatedAt
+  reports   CommentReport[]
+
+  @@index([articleId])
+  @@index([parentId])
+}
+
+model CommentReport {
+  id        String   @id @default(uuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    String
+  status    String   @default("PENDING") // PENDING | RESOLVED | DISMISSED
   createdAt DateTime @default(now())
+
+  @@index([commentId])
+  @@index([userId])
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  type      String   // LIKE | INSIGHTFUL | HELPFUL
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, articleId])
+  @@index([articleId])
 }
 
 model SavedArticle {
@@ -80,6 +132,18 @@ model SavedArticle {
   @@id([userId, articleId])
 }
 
+model ReadingHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articleId String
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@unique([userId, articleId])
+  @@index([userId])
+}
+
 model AuthorFollow {
   followerId String
   follower   User   @relation("FollowerRelation", fields: [followerId], references: [id], onDelete: Cascade)
@@ -87,4 +151,128 @@ model AuthorFollow {
   author     User   @relation("AuthorRelation", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@id([followerId, authorId])
+}
+
+// -------------------------------------------------------------
+// Phase 3 & 5: Community Discussions
+// -------------------------------------------------------------
+model Discussion {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  category  String   // Technology | AI | Education | Business | Cyber Security | Science
+  views     Int      @default(0)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments DiscussionComment[]
+  reports  DiscussionReport[]
+
+  @@index([category])
+  @@index([authorId])
+}
+
+model DiscussionComment {
+  id           String              @id @default(uuid())
+  content      String
+  discussionId String
+  discussion   Discussion          @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       DiscussionComment?  @relation("DiscussionCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      DiscussionComment[] @relation("DiscussionCommentReplies")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([discussionId])
+  @@index([parentId])
+}
+
+model DiscussionReport {
+  id           String     @id @default(uuid())
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  reporterId   String
+  reporter     User       @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason       String
+  status       String     @default("PENDING") // PENDING | RESOLVED | DISMISSED
+  createdAt    DateTime   @default(now())
+
+  @@index([discussionId])
+  @@index([reporterId])
+}
+
+// -------------------------------------------------------------
+// Phase 3 & 5: Polls & Voting
+// -------------------------------------------------------------
+model Poll {
+  id        String       @id @default(uuid())
+  question  String
+  category  String?      @default("General")
+  status    String       @default("ACTIVE") // ACTIVE | CLOSED
+  expiresAt DateTime?
+  authorId  String
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  options   PollOption[]
+  votes     PollVote[]
+
+  @@index([authorId])
+}
+
+model PollOption {
+  id     String     @id @default(uuid())
+  pollId String
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text   String
+  votes  PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id        String     @id @default(uuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+  @@index([optionId])
+}
+
+// -------------------------------------------------------------
+// Phase 4 & 5: Notifications & Personalization
+// -------------------------------------------------------------
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // BREAKING_NEWS | COMMENT_REPLY | DISCUSSION_REPLY | POLL_UPDATE | SYSTEM
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model NotificationSetting {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  breakingNews      Boolean  @default(true)
+  commentReplies    Boolean  @default(true)
+  discussionReplies Boolean  @default(true)
+  topicUpdates      Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

@@ -99,7 +99,8 @@ export const resubmitArticleSchema = z.object({
 });
 
 export const createCommentSchema = z.object({
-  content: z.string().trim().min(1, 'Comment content cannot be empty').max(2000, 'Comment exceeds 2000 characters')
+  content: z.string().trim().min(1, 'Comment content cannot be empty').max(2000, 'Comment exceeds 2000 characters'),
+  parentId: z.string().trim().optional().nullable()
 });
 
 export const createEventSchema = z.object({
@@ -115,4 +116,40 @@ export const createEventSchema = z.object({
 export const updateEventStatusSchema = z.object({
   status: z.enum(['PENDING', 'PUBLISHED', 'REJECTED', 'CHANGES_REQUESTED', 'DRAFT']),
   editorialFeedback: z.string().trim().max(2000).optional()
+});
+
+// --- Phase 3 & 4 Schemas ---
+export const createDiscussionSchema = z.object({
+  title: z.string().trim().min(3, 'Title must be at least 3 characters').max(200, 'Title exceeds 200 characters'),
+  content: z.string().trim().min(10, 'Discussion content must be at least 10 characters'),
+  category: z.string().trim().min(1, 'Category is required')
+});
+
+export const createDiscussionCommentSchema = z.object({
+  content: z.string().trim().min(1, 'Comment content cannot be empty').max(2000, 'Comment exceeds 2000 characters'),
+  parentId: z.string().trim().optional().nullable()
+});
+
+export const createPollSchema = z.object({
+  question: z.string().trim().min(5, 'Question must be at least 5 characters').max(300, 'Question exceeds 300 characters'),
+  category: z.string().trim().optional(),
+  options: z.array(z.string().trim().min(1, 'Option cannot be empty')).min(2, 'At least 2 options are required').max(10, 'Maximum 10 options allowed')
+});
+
+export const votePollSchema = z.object({
+  optionId: z.string().trim().min(1, 'Option ID is required')
+});
+
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').optional(),
+  bio: z.string().trim().max(500, 'Bio exceeds 500 characters').optional().nullable(),
+  avatarUrl: z.string().trim().optional().nullable(),
+  followedTopics: z.array(z.string().trim()).optional()
+});
+
+export const updateNotificationSettingsSchema = z.object({
+  breakingNews: z.boolean().optional(),
+  commentReplies: z.boolean().optional(),
+  discussionReplies: z.boolean().optional(),
+  topicUpdates: z.boolean().optional()
 });

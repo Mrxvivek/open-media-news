@@ -10,7 +10,7 @@ import {
   batchStatusSchema,
   editArticleSchema
 } from '../middleware/validation.js';
-import { emitRealtime } from '../index.js';
+import { emitRealtime } from '../realtime.js';
 
 export const adminRouter = Router();
 
@@ -395,5 +395,134 @@ adminRouter.post('/articles/batch-status', validateBody(batchStatusSchema), asyn
   } catch (err: any) {
     console.error('Admin batch status error:', err);
     return res.status(500).json({ error: 'Failed to perform batch update' });
+  }
+});
+
+// GET /api/admin/comments/reports (Admin: list comment moderation reports)
+adminRouter.get('/comments/reports', async (req: Request, res: Response) => {
+  try {
+    const { status = 'PENDING' } = req.query;
+    const where: any = {};
+    if (status && typeof status === 'string' && status !== 'all') {
+      where.status = status;
+    }
+
+    const reports = await prisma.commentReport.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        comment: {
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            article: { select: { id: true, title: true } }
+          }
+        }
+      }
+    });
+
+    return res.json({ reports });
+  } catch (err: any) {
+    console.error('Admin comment reports error:', err);
+    return res.status(500).json({ error: 'Failed to fetch comment reports' });
+  }
+});
+
+// POST /api/admin/comments/reports/:reportId/resolve (Admin: moderate reported comment)
+adminRouter.post('/comments/reports/:reportId/resolve', async (req: Request, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const { action } = req.body || {}; // 'DISMISS' | 'DELETE_COMMENT'
+
+    const report = await prisma.commentReport.findUnique({
+      where: { id: reportId },
+      include: { comment: true }
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    if (action === 'DELETE_COMMENT' && report.commentId) {
+      await prisma.comment.delete({ where: { id: report.commentId } }).catch(() => {});
+      await prisma.commentReport.update({
+        where: { id: reportId },
+        data: { status: 'RESOLVED' }
+      });
+      return res.json({ message: 'Comment deleted and report marked as resolved' });
+    } else {
+      await prisma.commentReport.update({
+        where: { id: reportId },
+        data: { status: 'DISMISSED' }
+      });
+      return res.json({ message: 'Report dismissed' });
+    }
+  } catch (err: any) {
+    console.error('Resolve comment report error:', err);
+    return res.status(500).json({ error: 'Failed to resolve report' });
+  }
+});
+
+// GET /api/admin/discussions/reports (Admin: list discussion moderation reports)
+adminRouter.get('/discussions/reports', async (req: Request, res: Response) => {
+  try {
+    const { status = 'PENDING' } = req.query;
+    const where: any = {};
+    if (status && typeof status === 'string' && status !== 'all') {
+      where.status = status;
+    }
+
+    const reports = await prisma.discussionReport.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        reporter: { select: { id: true, name: true, email: true } },
+        discussion: {
+          include: {
+            author: { select: { id: true, name: true, email: true } }
+          }
+        }
+      }
+    });
+
+    return res.json({ reports });
+  } catch (err: any) {
+    console.error('Admin discussion reports error:', err);
+    return res.status(500).json({ error: 'Failed to fetch discussion reports' });
+  }
+});
+
+// POST /api/admin/discussions/reports/:reportId/resolve (Admin: moderate reported discussion)
+adminRouter.post('/discussions/reports/:reportId/resolve', async (req: Request, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    const { action } = req.body || {}; // 'DISMISS' | 'DELETE_DISCUSSION'
+
+    const report = await prisma.discussionReport.findUnique({
+      where: { id: reportId },
+      include: { discussion: true }
+    });
+
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    if (action === 'DELETE_DISCUSSION' && report.discussionId) {
+      await prisma.discussion.delete({ where: { id: report.discussionId } }).catch(() => {});
+      await prisma.discussionReport.update({
+        where: { id: reportId },
+        data: { status: 'RESOLVED' }
+      });
+      return res.json({ message: 'Discussion deleted and report marked as resolved' });
+    } else {
+      await prisma.discussionReport.update({
+        where: { id: reportId },
+        data: { status: 'DISMISSED' }
+      });
+      return res.json({ message: 'Report dismissed' });
+    }
+  } catch (err: any) {
+    console.error('Resolve discussion report error:', err);
+    return res.status(500).json({ error: 'Failed to resolve report' });
   }
 });

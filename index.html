@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>OPEN MEDIA — Your Window to Global Technology, Business & Cybersecurity Intelligence</title>
     <meta name="description" content="OPEN MEDIA delivers worldwide technology, business, AI, and cybersecurity intelligence through editorial journalism and expert analysis.">
-    <meta property="og:title" content="OPEN MEDIA">
-    <meta property="og:description" content="Your Window to Global Technology, Business, and Cybersecurity Intelligence.">
+    <link rel="canonical" href="https://openmedia.soxit.in/">
+    <meta property="og:title" content="OPEN MEDIA — Global Technology, Business & Cybersecurity Intelligence">
+    <meta property="og:description" content="Your Window to Global Technology, Business, and Cybersecurity Intelligence. Real-time updates, audience discussions, and verified newsroom reporting.">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="https://openmedia.soxit.in/">
+    <meta property="og:image" content="https://openmedia.soxit.in/assets/open-media-logo.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="OPEN MEDIA — Global Tech & Business Intelligence">
+    <meta name="twitter:description" content="Your Window to Global Technology, Business, and Cybersecurity Intelligence.">
+    <meta name="twitter:image" content="https://openmedia.soxit.in/assets/open-media-logo.png">
     <!-- Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,6 +22,11 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="alternate" type="application/rss+xml" title="OPEN MEDIA RSS Feed — All" href="/rss.xml">
+    <link rel="alternate" type="application/rss+xml" title="OPEN MEDIA RSS Feed — Business" href="/rss.xml?category=Business">
+    <link rel="alternate" type="application/rss+xml" title="OPEN MEDIA RSS Feed — IT" href="/rss.xml?category=IT">
+    <link rel="alternate" type="application/rss+xml" title="OPEN MEDIA RSS Feed — Cyber Security" href="/rss.xml?category=Cyber+Security">
+    <link rel="alternate" type="application/rss+xml" title="OPEN MEDIA RSS Feed — AI" href="/rss.xml?category=AI">
 </head>
 <body>
 
@@ -23,13 +35,17 @@
         <div class="container top-bar-inner">
             <div class="top-bar-left">
                 <span class="live-indicator"><span class="pulse-dot"></span><i data-lucide="radio-tower"></i><span class="live-label">LIVE UPDATES</span><span class="live-update-divider"></span><span id="live-update-message">Monitoring the global desk</span></span>
-                <span id="current-date"></span>
-                <span class="ist-clock" id="live-ist-clock"><i data-lucide="clock"></i> <span id="ist-clock-text">--:--:-- -- IST</span></span>
-                <span class="edition-tag">Global Edition</span>
+                <button class="wire-sync-btn" id="wire-sync-btn" onclick="app.syncLiveRSS(this)" title="Sync latest global syndicated wire"><i data-lucide="refresh-cw"></i><span>Sync Wire</span></button>
+                <a href="/rss.xml" target="_blank" class="wire-rss-link" title="Open RSS 2.0 XML Feed"><i data-lucide="rss"></i><span>RSS</span></a>
             </div>
             <div class="top-bar-right">
+                <span class="edition-tag">Global Edition</span>
                 <span class="market-ticker-item">NASDAQ: <b class="text-emerald">+1.2%</b></span>
                 <span class="market-ticker-item">CYBER THREAT LEVEL: <b class="text-danger">ELEVATED</b></span>
+                <div class="top-bar-datetime">
+                    <span class="top-bar-date"><i data-lucide="calendar" aria-hidden="true"></i><span id="current-date"></span></span>
+                    <span class="ist-clock" id="live-ist-clock"><span class="analog-clock" aria-hidden="true"><span class="analog-clock-hand analog-clock-hour"></span><span class="analog-clock-hand analog-clock-minute"></span><span class="analog-clock-hand analog-clock-second"></span><span class="analog-clock-center"></span></span><span id="ist-clock-text">--:--:-- -- IST</span></span>
+                </div>
             </div>
         </div>
     </div>
@@ -38,8 +54,11 @@
     <header class="main-header" id="main-header">
         <div class="container header-inner">
             <a href="#home" class="brand-logo" onclick="event.preventDefault(); app.navigateTo('home')">
-                <div class="logo-icon"><i data-lucide="globe"></i></div>
-                <div class="logo-text">OPEN <span>MEDIA</span></div>
+                <div class="logo-icon" aria-hidden="true"><img src="assets/open-media-logo.png" alt=""></div>
+                <div class="logo-wordmark">
+                    <span class="logo-title">OPEN MEDIA</span>
+                    <span class="logo-tagline">S O X I T</span>
+                </div>
             </a>
 
             <nav class="desktop-nav" aria-label="Primary">
@@ -60,9 +79,6 @@
                 <button class="icon-btn" id="search-trigger-btn" title="Search" aria-label="Open search" onclick="app.openSearch()">
                     <i data-lucide="search"></i>
                 </button>
-                <button class="icon-btn" id="ai-teller-btn" title="AI News Teller" aria-label="Open AI News Teller" onclick="app.toggleAITeller()">
-                    <i data-lucide="sparkles"></i>
-                </button>
                 <button class="icon-btn badge-btn" id="notif-trigger-btn" title="Notifications" aria-label="Open notifications" onclick="app.openNotifications()">
                     <i data-lucide="bell"></i>
                     <span class="badge-count" id="notif-count">3</span>
@@ -77,6 +93,7 @@
                             <p class="user-role" id="menu-user-role">Reader</p>
                         </div>
                         <hr>
+                        <a href="javascript:void(0)" onclick="app.openProfileModal(); app.toggleProfileMenu()"><i data-lucide="user"></i> My Profile &amp; Topics</a>
                         <a href="#foryou" onclick="app.navigateTo('foryou'); app.toggleProfileMenu()"><i data-lucide="bookmark"></i> My Saved Articles</a>
                         <a href="#foryou" onclick="app.navigateTo('foryou'); app.toggleProfileMenu()"><i data-lucide="users"></i> Following</a>
                         <a href="#publish" class="publisher-only-menu" hidden onclick="app.navigateTo('publish'); app.toggleProfileMenu()"><i data-lucide="layout-dashboard"></i> Publisher Dashboard</a>
@@ -96,19 +113,29 @@
     <div class="mobile-drawer-overlay" id="mobile-drawer-overlay" onclick="app.toggleMobileNav()"></div>
     <div class="mobile-drawer" id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Mobile navigation">
         <div class="drawer-header">
-            <div class="logo-text">OPEN <span>MEDIA</span></div>
+            <div class="brand-logo">
+                <div class="logo-icon" aria-hidden="true"><img src="assets/open-media-logo.png" alt=""></div>
+                <div class="logo-wordmark">
+                    <span class="logo-title">OPEN MEDIA</span>
+                    <span class="logo-tagline">S O X I T</span>
+                </div>
+            </div>
             <button class="icon-btn" onclick="app.toggleMobileNav()" aria-label="Close menu"><i data-lucide="x"></i></button>
         </div>
         <nav class="mobile-nav-links" aria-label="Mobile primary">
-            <a href="#home" class="mobile-nav-link" data-page="home" onclick="app.navigateTo('home'); app.toggleMobileNav();">Home</a>
-            <a href="#foryou" class="mobile-nav-link reader-only-nav" data-page="foryou" hidden onclick="app.navigateTo('foryou'); app.toggleMobileNav();">For You</a>
-            <a href="#business" class="mobile-nav-link" data-page="business" onclick="app.navigateTo('business'); app.toggleMobileNav();">Business</a>
-            <a href="#tech" class="mobile-nav-link" data-page="tech" onclick="app.navigateTo('tech'); app.toggleMobileNav();">IT</a>
-            <a href="#cyber" class="mobile-nav-link" data-page="cyber" onclick="app.navigateTo('cyber'); app.toggleMobileNav();">Cyber Security</a>
-            <a href="#ai" class="mobile-nav-link" data-page="ai" onclick="app.navigateTo('ai'); app.toggleMobileNav();">AI</a>
-            <a href="#publish" class="mobile-nav-link publisher-only-nav" data-page="publish" hidden onclick="app.navigateTo('publish'); app.toggleMobileNav();">Publish</a>
-            <a href="#admin" class="mobile-nav-link admin-only-nav" data-page="admin" hidden onclick="app.navigateTo('admin'); app.toggleMobileNav();">Admin Panel</a>
+            <a href="#home" class="mobile-nav-link" data-page="home" onclick="app.navigateTo('home')">Home</a>
+            <a href="#foryou" class="mobile-nav-link reader-only-nav" data-page="foryou" hidden onclick="app.navigateTo('foryou')">For You</a>
+            <a href="#business" class="mobile-nav-link" data-page="business" onclick="app.navigateTo('business')">Business</a>
+            <a href="#tech" class="mobile-nav-link" data-page="tech" onclick="app.navigateTo('tech')">IT</a>
+            <a href="#cyber" class="mobile-nav-link" data-page="cyber" onclick="app.navigateTo('cyber')">Cyber Security</a>
+            <a href="#ai" class="mobile-nav-link" data-page="ai" onclick="app.navigateTo('ai')">AI</a>
+            <a href="#publish" class="mobile-nav-link publisher-only-nav" data-page="publish" hidden onclick="app.navigateTo('publish')">Publish</a>
+            <a href="#admin" class="mobile-nav-link admin-only-nav" data-page="admin" hidden onclick="app.navigateTo('admin')">Admin Panel</a>
         </nav>
+        <div class="mobile-auth-actions auth-guest" aria-label="Account">
+            <button class="btn btn-outline btn-sm" type="button" onclick="app.closeMobileNav(); app.openAuthModal('login')">Login</button>
+            <button class="btn btn-primary btn-sm" type="button" onclick="app.closeMobileNav(); app.openAuthModal('register')">Register</button>
+        </div>
     </div>
 
     <!-- Breaking News Ticker -->
@@ -132,15 +159,143 @@
                     <div class="magazine-flip-card" id="magazine-flip-card"></div>
                 </div>
 
+                <!-- Editor's Picks Strip -->
                 <div class="editor-picks-strip" id="editor-picks-strip"></div>
 
-                <!-- Trending News -->
-                <section class="section-block">
+                <!-- For You Spotlight Preview -->
+                <section class="section-block home-foryou-section" id="home-foryou-section">
                     <div class="section-header">
-                        <h2><i data-lucide="trending-up" class="text-cyan"></i> Trending Now</h2>
+                        <div>
+                            <h2><i data-lucide="sparkles" class="text-royal-blue"></i> For You · Personalized Intelligence</h2>
+                            <p class="section-subtitle">Curated briefings matched to your followed topics, authors, and saved research</p>
+                        </div>
+                        <a href="#foryou" class="section-view-all" onclick="app.navigateTo('foryou')">Open Personal Feed <i data-lucide="arrow-right"></i></a>
                     </div>
-                    <div class="horizontal-scroll-container" id="trending-container"></div>
+                    <div class="card-grid-3" id="home-foryou-strip"></div>
                 </section>
+
+                <!-- Latest News Feed & Wire -->
+                <section class="section-block home-latest-section" id="home-latest-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="newspaper" class="text-blue"></i> Latest News &amp; Real-Time Wire</h2>
+                            <p class="section-subtitle">Live continuous coverage from global newsrooms, regulatory filings, and market disclosures</p>
+                        </div>
+                        <div class="feed-sort-controls">
+                            <span class="sort-label">Sort:</span>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-sm btn-outline active" id="sort-latest-btn" onclick="app.sortHomeLatest('latest', this)"><i data-lucide="clock"></i> Latest</button>
+                                <button type="button" class="btn btn-sm btn-outline" id="sort-popular-btn" onclick="app.sortHomeLatest('popular', this)"><i data-lucide="flame"></i> Popular</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-chip-bar home-feed-chips" id="home-latest-filters">
+                        <button class="chip active" onclick="app.filterHomeLatest('all', this)"><i data-lucide="layers"></i> All Stories</button>
+                        <button class="chip" onclick="app.filterHomeLatest('Business', this)"><i data-lucide="trending-up"></i> Business</button>
+                        <button class="chip" onclick="app.filterHomeLatest('IT', this)"><i data-lucide="cpu"></i> IT &amp; Cloud</button>
+                        <button class="chip" onclick="app.filterHomeLatest('Cyber Security', this)"><i data-lucide="shield-alert"></i> Cyber Security</button>
+                        <button class="chip" onclick="app.filterHomeLatest('AI', this)"><i data-lucide="sparkles"></i> Artificial Intelligence</button>
+                    </div>
+
+                    <div class="card-grid-3 home-latest-feed" id="home-latest-feed"></div>
+
+                    <div class="feed-pagination-bar" id="home-latest-pagination">
+                        <span class="feed-count-badge" id="home-latest-count">Showing 9 stories</span>
+                        <button class="btn btn-primary" id="home-load-more-btn" onclick="app.loadMoreLatestStories()">
+                            <span class="btn-text">Load More Stories</span>
+                            <i data-lucide="arrow-down"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Technology News / IT Spotlight -->
+                <section class="section-block" id="home-tech-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="cpu" class="text-blue"></i> Technology &amp; IT Spotlight</h2>
+                            <p class="section-subtitle">Cloud architecture, chips, enterprise software, and open-source infrastructure</p>
+                        </div>
+                        <a href="#tech" class="section-view-all" onclick="app.navigateTo('tech')">Explore All IT News <i data-lucide="arrow-right"></i></a>
+                    </div>
+                    <div class="grid-spotlight" id="tech-spotlight-container"></div>
+                </section>
+
+                <!-- AI Watch & Machine Intelligence -->
+                <section class="section-block" id="home-ai-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="sparkles" class="text-purple"></i> AI Watch &amp; Machine Intelligence</h2>
+                            <p class="section-subtitle">Foundation models, generative systems, robotics, and cognitive compute breakthroughs</p>
+                        </div>
+                        <a href="#ai" class="section-view-all" onclick="app.navigateTo('ai')">Explore AI Hub <i data-lucide="arrow-right"></i></a>
+                    </div>
+                    <div class="card-grid-3" id="ai-highlights-container"></div>
+                </section>
+
+                <!-- Cybersecurity Watch & Threat Alerts -->
+                <section class="section-block" id="home-cyber-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="shield-check" class="text-red"></i> Cybersecurity Watch &amp; Threat Intelligence</h2>
+                            <p class="section-subtitle">Zero-day vulnerabilities, nation-state activity, ransomware alerts, and patch advisories</p>
+                        </div>
+                        <a href="#cyber" class="section-view-all" onclick="app.navigateTo('cyber')">Explore Cyber Security <i data-lucide="arrow-right"></i></a>
+                    </div>
+                    <div class="card-grid-3" id="cyber-alerts-container"></div>
+                </section>
+
+                <!-- Business News & Market Highlights -->
+                <section class="section-block" id="home-business-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="bar-chart-3" class="text-emerald"></i> Business &amp; Market Highlights</h2>
+                            <p class="section-subtitle">Earnings disclosures, macro policy, corporate governance, and venture capital flows</p>
+                        </div>
+                        <a href="#business" class="section-view-all" onclick="app.navigateTo('business')">Explore Business &amp; Markets <i data-lucide="arrow-right"></i></a>
+                    </div>
+                    <div class="card-grid-3" id="business-highlights-container"></div>
+                </section>
+
+                <!-- Technology Insights & Deep Dives -->
+                <section class="section-block" id="home-insights-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="book-open" class="text-royal-blue"></i> Technology Insights &amp; Deep Dives</h2>
+                            <p class="section-subtitle">In-depth editorial analysis, technical architecture breakdowns, and industry transformation reports</p>
+                        </div>
+                    </div>
+                    <div class="card-grid-3" id="tech-insights-container"></div>
+                </section>
+
+                <!-- Community Discussions Preview -->
+                <section class="section-block" id="home-discussions-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="message-square" class="text-purple"></i> Community Discussions &amp; Perspectives</h2>
+                            <p class="section-subtitle">Join peer debates, participate in editorial discourse, and exchange insights with industry experts</p>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="app.openCreateDiscussionModal()">
+                            <i data-lucide="plus-circle"></i> Start a Discussion
+                        </button>
+                    </div>
+                    <div class="card-grid-3" id="home-discussions-container"></div>
+                </section>
+
+                <!-- Community Polls & Reader Voices -->
+                <section class="section-block" id="home-polls-section">
+                    <div class="section-header">
+                        <div>
+                            <h2><i data-lucide="pie-chart" class="text-emerald"></i> Live Community Polls &amp; Audience Pulse</h2>
+                            <p class="section-subtitle">Cast your vote on strategic technology trends, market forecasts, and architecture debates</p>
+                        </div>
+                        <button class="btn btn-outline btn-sm" id="btn-create-poll-trigger" onclick="app.openCreatePollModal()">
+                            <i data-lucide="plus-circle"></i> Create Poll
+                        </button>
+                    </div>
+                    <div class="card-grid-3" id="home-polls-container"></div>
+                </section>
+
 
                 <!-- Upcoming Webinars & Events -->
                 <section class="section-block webinar-section">
@@ -148,32 +303,6 @@
                         <h2><i data-lucide="calendar" class="text-purple"></i> Upcoming Webinars &amp; Events</h2>
                     </div>
                     <div class="webinar-grid" id="events-container"></div>
-                </section>
-
-                <!-- AI News Teller Quick Intelligence Bar -->
-                <section class="section-block ai-teller-home-section">
-                    <div class="ai-home-banner">
-                        <div class="ai-home-banner-info">
-                            <div class="ai-home-badge"><i data-lucide="sparkles"></i> AI NEWS TELLER</div>
-                            <h3>Instant Intelligence &amp; News Synthesis</h3>
-                            <p>Get an AI-synthesized briefing of all breaking news across technology, markets, and cybersecurity in seconds.</p>
-                        </div>
-                        <div class="ai-home-banner-actions">
-                            <button class="btn btn-primary" id="home-summarize-btn" onclick="app.summarizeAITeller(this)">
-                                <i data-lucide="sparkles"></i> Summarize News
-                            </button>
-                            <button class="btn btn-outline" onclick="app.toggleAITeller()">
-                                <i data-lucide="bot"></i> Open AI Teller
-                            </button>
-                        </div>
-                    </div>
-                    <div class="ai-home-summary-box" id="ai-home-summary-box" style="display: none;">
-                        <div class="ai-summary-header">
-                            <h4><i data-lucide="file-text" class="text-cyan"></i> Executive AI Summary</h4>
-                            <button class="icon-btn" onclick="document.getElementById('ai-home-summary-box').style.display='none'" aria-label="Close summary"><i data-lucide="x"></i></button>
-                        </div>
-                        <div class="ai-summary-content" id="ai-home-summary-content"></div>
-                    </div>
                 </section>
 
             </div>
@@ -190,11 +319,16 @@
                 <div class="three-column-layout">
                     <aside class="col-sidebar-left">
                         <div class="panel-box">
-                            <h3 class="panel-title"><i data-lucide="bookmark"></i> My Library</h3>
+                            <h3 class="panel-title"><i data-lucide="compass"></i> Personalization</h3>
                             <ul class="library-nav" id="library-nav">
-                                <li><a href="javascript:void(0)" class="active" data-lib="saved" onclick="app.filterLibrary('saved')">Saved Articles (<span id="saved-count">0</span>)</a></li>
-                                <li><a href="javascript:void(0)" data-lib="history" onclick="app.filterLibrary('history')">Reading History</a></li>
+                                <li><a href="javascript:void(0)" class="active" data-lib="recommended" onclick="app.filterLibrary('recommended')"><i data-lucide="sparkles" style="width:14px;height:14px;"></i> For You Recommendations</a></li>
+                                <li><a href="javascript:void(0)" data-lib="saved" onclick="app.filterLibrary('saved')"><i data-lucide="bookmark" style="width:14px;height:14px;"></i> Saved Articles (<span id="saved-count">0</span>)</a></li>
+                                <li><a href="javascript:void(0)" data-lib="history" onclick="app.filterLibrary('history')"><i data-lucide="clock" style="width:14px;height:14px;"></i> Reading History</a></li>
                             </ul>
+                        </div>
+                        <div class="panel-box">
+                            <h3 class="panel-title"><i data-lucide="tag"></i> Follow Topics</h3>
+                            <div id="foryou-followed-topics-chips" class="topic-toggle-chips" style="padding:4px 0;"></div>
                         </div>
                         <div class="panel-box">
                             <h3 class="panel-title"><i data-lucide="users"></i> Followed Authors</h3>
@@ -219,7 +353,10 @@
         <section id="page-tech" class="page-view">
             <div class="container">
                 <div class="page-header-title">
-                    <h1>IT &amp; Innovation</h1>
+                    <div class="page-title-row">
+                        <h1>IT &amp; Innovation</h1>
+                        <a href="/rss.xml?category=IT" target="_blank" class="tab-rss-btn" title="Open IT RSS 2.0 Feed"><i data-lucide="rss"></i> <span>IT RSS Feed</span></a>
+                    </div>
                     <p>Artificial Intelligence, Cloud Computing, Semiconductors, and Enterprise Tech.</p>
                 </div>
 
@@ -256,7 +393,10 @@
         <section id="page-business" class="page-view">
             <div class="container">
                 <div class="page-header-title">
-                    <h1>Business &amp; Markets</h1>
+                    <div class="page-title-row">
+                        <h1>Business &amp; Markets</h1>
+                        <a href="/rss.xml?category=Business" target="_blank" class="tab-rss-btn" title="Open Business RSS 2.0 Feed"><i data-lucide="rss"></i> <span>Business RSS Feed</span></a>
+                    </div>
                     <p>Global markets, M&amp;A activity, earnings reports, and executive strategy.</p>
                 </div>
 
@@ -276,12 +416,11 @@
                         <div class="panel-box">
                             <h3 class="panel-title">Market Indicators</h3>
                             <div class="market-widget">
-                                <div class="market-row"><span>S&amp;P 500</span> <span class="text-emerald">+0.84%</span></div>
-                                <div class="market-row"><span>NASDAQ</span> <span class="text-emerald">+1.22%</span></div>
-                                <div class="market-row"><span>FTSE 100</span> <span class="text-red">-0.15%</span></div>
-                                <div class="market-row"><span>NIFTY 50</span> <span class="text-emerald">+0.45%</span></div>
+                                <div class="market-row"><span>S&amp;P 500</span> <span class="text-emerald">5,870.62 (+0.84%)</span></div>
+                                <div class="market-row"><span>NASDAQ</span> <span class="text-emerald">18,680.12 (+1.22%)</span></div>
+                                <div class="market-row"><span>FTSE 100</span> <span class="text-emerald">8,071.19 (+0.15%)</span></div>
+                                <div class="market-row"><span>NIFTY 50</span> <span class="text-emerald">23,532.70 (+0.45%)</span></div>
                             </div>
-                            <p class="sample-tag" style="margin-top:12px; display:block;">Sample interface data, not live market data.</p>
                         </div>
                         <div class="panel-box">
                             <h3 class="panel-title">Business Domains</h3>
@@ -303,7 +442,10 @@
         <section id="page-cyber" class="page-view">
             <div class="container">
                 <div class="page-header-title">
-                    <h1>Cyber Security Intelligence</h1>
+                    <div class="page-title-row">
+                        <h1>Cyber Security Intelligence</h1>
+                        <a href="/rss.xml?category=Cyber+Security" target="_blank" class="tab-rss-btn" title="Open Cyber Security RSS 2.0 Feed"><i data-lucide="rss"></i> <span>Cyber RSS Feed</span></a>
+                    </div>
                     <p>Real-time threat tracking, zero-day vulnerabilities, ransomware alerts, and defense strategies.</p>
                 </div>
 
@@ -353,13 +495,16 @@
         <section id="page-ai" class="page-view">
             <div class="container">
                 <div class="page-header-title">
-                    <h1>Artificial Intelligence</h1>
+                    <div class="page-title-row">
+                        <h1>Artificial Intelligence</h1>
+                        <a href="/rss.xml?category=AI" target="_blank" class="tab-rss-btn" title="Open AI RSS 2.0 Feed"><i data-lucide="rss"></i> <span>AI RSS Feed</span></a>
+                    </div>
                     <p>Generative AI, research breakthroughs, startups, tooling, enterprise adoption, and policy.</p>
                 </div>
 
                 <div class="ai-page-hero">
                     <div class="card-editorial lead-story" id="ai-hero-story"></div>
-                    <div class="editor-picks-strip" id="ai-secondary-stories" style="grid-template-columns: 1fr; margin: 0;"></div>
+                    <div class="editor-picks-strip" id="ai-secondary-stories"></div>
                 </div>
 
                 <div class="filter-chip-bar" id="ai-filters">
@@ -419,7 +564,7 @@
 
                 <!-- SUBMIT ARTICLE -->
                 <div class="publish-panel active" id="publish-tab-article">
-                    <div class="panel-box" style="max-width:640px;">
+                    <div class="panel-box publisher-submission-card">
                         <h3 class="panel-title"><i data-lucide="pen-tool"></i> Article Submission</h3>
                         <form id="publisher-form" onsubmit="app.handleArticleSubmission(event)">
                             <div class="form-group">
@@ -469,7 +614,7 @@
 
                 <!-- SUBMIT EVENT -->
                 <div class="publish-panel" id="publish-tab-event">
-                    <div class="panel-box" style="max-width:640px;">
+                    <div class="panel-box publisher-submission-card">
                         <h3 class="panel-title"><i data-lucide="calendar-plus"></i> Event Submission</h3>
                         <form id="event-publisher-form" onsubmit="app.handleEventSubmission(event)">
                             <div class="form-group">
@@ -629,7 +774,7 @@
                         </div>
                         <div class="form-group">
                             <label for="contact-phone">Contact Number</label>
-                            <input type="tel" id="contact-phone" class="form-control" required minlength="7" maxlength="20" pattern="[+]?[0-9 ()-]+" inputmode="tel" autocomplete="tel" placeholder="e.g. +1 555 123 4567">
+                            <input type="tel" id="contact-phone" class="form-control" required minlength="10" maxlength="10" pattern="[0-9]{10}" inputmode="numeric" autocomplete="tel" placeholder="+91" oninput="this.value = this.value.replace(/[^0-9]/g, ''); this.setCustomValidity('')">
                         </div>
                         <div class="form-group">
                             <label for="contact-email">Email Address</label>
@@ -712,7 +857,7 @@
                     <form id="advertise-form" onsubmit="app.handleAdvertiseSubmission(event)" novalidate>
                         <div class="form-group">
                             <label for="adv-name">Full Name *</label>
-                            <input type="text" id="adv-name" class="form-control" required minlength="2" maxlength="80" placeholder="e.g. Alex Morgan">
+                            <input type="text" id="adv-name" class="form-control" required minlength="2" maxlength="80" pattern="[A-Za-z ]+" placeholder="e.g. Alex Morgan" oninput="this.value = this.value.replace(/[^A-Za-z ]/g, '')">
                         </div>
                         <div class="form-group">
                             <label for="adv-company">Company / Organization *</label>
@@ -1019,7 +1164,10 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col brand-col">
-                    <div class="logo-text">OPEN <span>MEDIA</span></div>
+                    <div class="footer-brand-lockup">
+                        <div class="logo-icon" aria-hidden="true"><img src="assets/open-media-logo.png" alt=""></div>
+                        <div class="logo-text">OPEN <span>MEDIA</span></div>
+                    </div>
                     <p>OPEN MEDIA delivers worldwide technology, business, AI, and cybersecurity intelligence through trusted journalism, expert analysis, and industry insights.</p>
                 </div>
                 <div class="footer-col">
@@ -1038,6 +1186,7 @@
                         <li><a href="#careers" onclick="event.preventDefault(); app.navigateTo('careers')">Careers</a></li>
                         <li><a href="#advertise" onclick="event.preventDefault(); app.navigateTo('advertise')">Advertise</a></li>
                         <li><a href="#contact" onclick="event.preventDefault(); app.navigateTo('contact')">Contact</a></li>
+                        <li><a href="/rss.xml" target="_blank" rel="noopener"><i data-lucide="rss" style="width:12px;height:12px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>RSS Wire Feed</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
@@ -1077,36 +1226,6 @@
         </button>
     </nav>
 
-    <!-- AI NEWS TELLER FLOATING DRAWER / BOTTOM SHEET -->
-    <div class="ai-teller-drawer" id="ai-teller-drawer" role="dialog" aria-label="AI News Teller">
-        <div class="ai-header">
-            <div class="ai-title"><i data-lucide="sparkles" class="text-cyan"></i> AI News Teller</div>
-            <button class="icon-btn" onclick="app.toggleAITeller()" aria-label="Close AI News Teller"><i data-lucide="x"></i></button>
-        </div>
-        <div class="ai-body" id="ai-body-content">
-            <p class="ai-intro">Hello D. Phani Kumar. Select an AI tool or ask a question about current news intelligence:</p>
-            <div class="ai-actions-grid">
-                <button class="btn btn-outline btn-sm" id="btn-ai-summarize" onclick="app.runAIFunction('summarize', this)"><i data-lucide="file-text"></i> Summarize</button>
-                <button class="btn btn-outline btn-sm" id="btn-ai-takeaways" onclick="app.runAIFunction('takeaways', this)"><i data-lucide="list-checks"></i> Key Takeaways</button>
-                <button class="btn btn-outline btn-sm" id="btn-ai-explain" onclick="app.runAIFunction('explain', this)"><i data-lucide="help-circle"></i> Explain Simply</button>
-                <button class="btn btn-outline btn-sm" id="btn-ai-readAloud" onclick="app.runAIFunction('readAloud', this)"><i data-lucide="volume-2"></i> Read Aloud</button>
-                <button class="btn btn-outline btn-sm" id="btn-ai-translate" onclick="app.runAIFunction('translate', this)"><i data-lucide="languages"></i> Translate</button>
-                <button class="btn btn-outline btn-sm" id="btn-ai-recommend" onclick="app.runAIFunction('recommend', this)"><i data-lucide="compass"></i> Recommend</button>
-            </div>
-            <form class="ai-input-row" onsubmit="app.handleAIAsk(event)">
-                <label for="ai-ask-input" class="sr-only">Ask about today's news</label>
-                <input type="text" id="ai-ask-input" class="form-control" placeholder="Ask about today's news...">
-                <button type="submit" class="btn btn-primary btn-sm"><i data-lucide="arrow-up"></i></button>
-            </form>
-            <div class="ai-output-box" id="ai-output-box">
-                <span class="placeholder-text">AI responses and summaries will appear here. This is a frontend simulation.</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- AI DRAWER BACKDROP OVERLAY -->
-    <div class="ai-drawer-overlay" id="ai-drawer-overlay" onclick="app.toggleAITeller()"></div>
-
     <!-- SEARCH OVERLAY MODAL -->
     <div class="modal-overlay" id="search-modal" role="dialog" aria-modal="true" aria-label="Search">
         <div class="search-modal-card">
@@ -1133,6 +1252,109 @@
     <!-- ARTICLE SPA READER MODAL -->
     <div class="modal-overlay" id="article-modal" role="dialog" aria-modal="true" aria-label="Article reader">
         <div class="article-modal-card" id="article-modal-content"></div>
+    </div>
+
+    <!-- ARTICLE SOCIAL SHARE MODAL -->
+    <div class="modal-overlay" id="share-modal" role="dialog" aria-modal="true" aria-label="Share article" onclick="if (event.target === this) app.closeShareModal()">
+        <div class="share-modal-card">
+            <div class="share-modal-header">
+                <h3><i data-lucide="share-2" class="text-royal-blue"></i> Share Article</h3>
+                <button class="icon-btn" onclick="app.closeShareModal()" aria-label="Close share options"><i data-lucide="x"></i></button>
+            </div>
+            <div class="share-modal-body" id="share-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- USER PROFILE & TOPICS MODAL -->
+    <div class="modal-overlay" id="modal-user-profile" role="dialog" aria-modal="true" aria-label="User Profile" onclick="if (event.target === this) app.closeProfileModal()">
+        <div class="admin-modal-card" style="max-width: 620px;">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="user-check" class="text-royal-blue"></i> My Profile &amp; Preferences</h3>
+                <button class="icon-btn" onclick="app.closeProfileModal()" aria-label="Close profile"><i data-lucide="x"></i></button>
+            </div>
+            <div id="profile-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- CREATE DISCUSSION MODAL -->
+    <div class="modal-overlay" id="modal-create-discussion" role="dialog" aria-modal="true" aria-label="Start Discussion" onclick="if (event.target === this) app.closeCreateDiscussionModal()">
+        <div class="admin-modal-card" style="max-width: 640px;">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="message-square-plus" class="text-purple"></i> Start a Community Discussion</h3>
+                <button class="icon-btn" onclick="app.closeCreateDiscussionModal()" aria-label="Close modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="create-discussion-form" onsubmit="app.handleCreateDiscussionSubmit(event)">
+                <div class="admin-form-group">
+                    <label for="disc-title">Discussion Topic / Headline *</label>
+                    <input type="text" id="disc-title" class="form-control" placeholder="e.g. Best practices for securing LLM tool access" required minlength="5" maxlength="200">
+                </div>
+                <div class="admin-form-group">
+                    <label for="disc-category">Category *</label>
+                    <select id="disc-category" class="form-control" required>
+                        <option value="AI">AI &amp; Machine Learning</option>
+                        <option value="Cyber Security">Cyber Security</option>
+                        <option value="IT">IT &amp; Cloud</option>
+                        <option value="Business">Business Strategy</option>
+                        <option value="Science">Science &amp; Emerging Tech</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label for="disc-content">Discussion Perspective / Context *</label>
+                    <textarea id="disc-content" class="form-control" rows="5" placeholder="Share your thesis, inquiry, or operational challenge..." required minlength="10"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeCreateDiscussionModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-discussion">
+                        <i data-lucide="send"></i> Post Discussion
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DISCUSSION VIEWER MODAL -->
+    <div class="modal-overlay" id="modal-discussion-viewer" role="dialog" aria-modal="true" aria-label="Discussion Viewer" onclick="if (event.target === this) app.closeDiscussionViewer()">
+        <div class="article-modal-card" id="discussion-viewer-content" style="max-width: 840px;"></div>
+    </div>
+
+    <!-- CREATE POLL MODAL -->
+    <div class="modal-overlay" id="modal-create-poll" role="dialog" aria-modal="true" aria-label="Create Poll" onclick="if (event.target === this) app.closeCreatePollModal()">
+        <div class="admin-modal-card" style="max-width: 600px;">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="pie-chart" class="text-emerald"></i> Create Community Poll</h3>
+                <button class="icon-btn" onclick="app.closeCreatePollModal()" aria-label="Close modal"><i data-lucide="x"></i></button>
+            </div>
+            <form id="create-poll-form" onsubmit="app.handleCreatePollSubmit(event)">
+                <div class="admin-form-group">
+                    <label for="poll-question">Poll Question *</label>
+                    <input type="text" id="poll-question" class="form-control" placeholder="e.g. Which LLM provider has the best developer tooling?" required minlength="5" maxlength="300">
+                </div>
+                <div class="admin-form-group">
+                    <label for="poll-category">Category</label>
+                    <select id="poll-category" class="form-control">
+                        <option value="AI">AI</option>
+                        <option value="Cyber Security">Cyber Security</option>
+                        <option value="IT">IT</option>
+                        <option value="Business">Business</option>
+                    </select>
+                </div>
+                <div class="admin-form-group">
+                    <label>Poll Options (At least 2 required) *</label>
+                    <div id="poll-options-inputs" style="display:flex; flex-direction:column; gap:8px;">
+                        <input type="text" class="form-control poll-opt-input" placeholder="Option 1" required>
+                        <input type="text" class="form-control poll-opt-input" placeholder="Option 2" required>
+                        <input type="text" class="form-control poll-opt-input" placeholder="Option 3 (Optional)">
+                        <input type="text" class="form-control poll-opt-input" placeholder="Option 4 (Optional)">
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeCreatePollModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-poll">
+                        <i data-lucide="check-circle-2"></i> Launch Poll
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- EVENT REGISTRATION MODAL -->
@@ -1367,7 +1589,9 @@
     <script>
         if (typeof io === 'undefined') {
             const socketHost = window.location.hostname || 'localhost';
-            document.write('<script src="http://' + socketHost + ':4000/socket.io/socket.io.js"><\/script>');
+            const socketPort = (window.location.port === '4000' || window.location.port === '3000') ? ':4000' : '';
+            const proto = window.location.protocol === 'https:' ? 'https:' : 'http:';
+            document.write('<script src="' + proto + '//' + socketHost + socketPort + '/socket.io/socket.io.js"><\/script>');
         }
     </script>
     <!-- JS Scripts -->

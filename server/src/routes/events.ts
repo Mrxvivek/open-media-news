@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { validateBody, createEventSchema, updateEventStatusSchema } from '../middleware/validation.js';
-import { emitRealtime } from '../index.js';
+import { emitRealtime } from '../realtime.js';
 
 export const eventsRouter = Router();
 
