@@ -10,25 +10,25 @@ async function syncRealtimeData() {
   const [businessArticles, itArticles, cyberArticles, aiArticles] = await Promise.all([
     prisma.article.findMany({
       where: { category: 'Business', status: 'PUBLISHED' },
-      take: 25,
+      take: 50,
       orderBy: { publishedAt: 'desc' },
       include: { author: { select: { name: true } } }
     }),
     prisma.article.findMany({
       where: { category: 'IT', status: 'PUBLISHED' },
-      take: 25,
+      take: 50,
       orderBy: { publishedAt: 'desc' },
       include: { author: { select: { name: true } } }
     }),
     prisma.article.findMany({
       where: { category: 'Cyber Security', status: 'PUBLISHED' },
-      take: 25,
+      take: 50,
       orderBy: { publishedAt: 'desc' },
       include: { author: { select: { name: true } } }
     }),
     prisma.article.findMany({
       where: { category: 'AI', status: 'PUBLISHED' },
-      take: 25,
+      take: 50,
       orderBy: { publishedAt: 'desc' },
       include: { author: { select: { name: true } } }
     })

@@ -414,7 +414,10 @@
                 <div class="three-column-layout">
                     <aside class="col-sidebar-left">
                         <div class="panel-box">
-                            <h3 class="panel-title">Market Indicators</h3>
+                            <h3 class="panel-title" style="display:flex; justify-content:space-between; align-items:center;">
+                                <span><i data-lucide="trending-up"></i> Market Indicators</span>
+                                <span style="font-size:0.65rem; background:rgba(16,185,129,0.15); color:#10B981; padding:2px 6px; border-radius:4px; font-weight:700;">● LIVE WIRE</span>
+                            </h3>
                             <div class="market-widget">
                                 <div class="market-row"><span>S&amp;P 500</span> <span class="text-emerald">5,870.62 (+0.84%)</span></div>
                                 <div class="market-row"><span>NASDAQ</span> <span class="text-emerald">18,680.12 (+1.22%)</span></div>
@@ -461,8 +464,11 @@
 
                 <div class="three-column-layout">
                     <aside class="col-sidebar-left">
-                        <div class="panel-box alert-panel">
-                            <h3 class="panel-title text-red"><i data-lucide="shield-alert"></i> Live Threat Radar</h3>
+                        <div class="panel-box alert-panel" id="cyber-threat-radar-panel">
+                            <h3 class="panel-title text-red" style="display:flex; justify-content:space-between; align-items:center;">
+                                <span><i data-lucide="shield-alert"></i> Live Threat Radar</span>
+                                <span style="font-size:0.65rem; background:rgba(239,68,68,0.15); color:#EF4444; padding:2px 6px; border-radius:4px; font-weight:700;">● ACTIVE TELEMETRY</span>
+                            </h3>
                             <div class="threat-stat">
                                 <span class="stat-num text-red">14</span>
                                 <span class="stat-label">Active Zero-Days Tracked</span>

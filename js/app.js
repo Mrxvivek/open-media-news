@@ -749,6 +749,15 @@ class GlobalCoverageApp {
         console.log('⚡ [Realtime] RSS Wire Synced:', data);
         await this.fetchBackendArticles();
         await this.fetchTicker();
+        if (this.currentPage === 'business') {
+          this.renderCategoryFeed('business', 'business-feed', 'business-domain-tree', BUSINESS_DOMAIN_GROUPS, 'business-ad-slot');
+        } else if (this.currentPage === 'tech') {
+          this.renderCategoryFeed('tech', 'tech-feed', 'tech-domain-tree', TECH_DOMAIN_GROUPS, 'tech-ad-slot');
+        } else if (this.currentPage === 'cyber') {
+          this.renderCategoryFeed('cyber', 'cyber-feed', 'cyber-domain-tree', CYBER_DOMAIN_GROUPS, null);
+        } else if (this.currentPage === 'ai') {
+          this.renderAIPage();
+        }
         const liveMsg = document.getElementById('live-update-message');
         if (liveMsg) {
           liveMsg.textContent = data?.inserted > 0
@@ -829,7 +838,15 @@ class GlobalCoverageApp {
 
       this.renderHomePage();
       this.renderCategoryFeeds();
-      if (this.currentPage === 'ai') this.renderAIPage();
+      if (this.currentPage === 'ai') {
+        this.renderAIPage();
+      } else if (this.currentPage === 'business') {
+        this.renderCategoryFeed('business', 'business-feed', 'business-domain-tree', BUSINESS_DOMAIN_GROUPS, 'business-ad-slot');
+      } else if (this.currentPage === 'tech') {
+        this.renderCategoryFeed('tech', 'tech-feed', 'tech-domain-tree', TECH_DOMAIN_GROUPS, 'tech-ad-slot');
+      } else if (this.currentPage === 'cyber') {
+        this.renderCategoryFeed('cyber', 'cyber-feed', 'cyber-domain-tree', CYBER_DOMAIN_GROUPS, null);
+      }
     }
   }
 
@@ -2593,7 +2610,7 @@ class GlobalCoverageApp {
     if (!item) return '';
     const isSaved = this.isSaved(item.id);
     const domainBadge = item.domain || item.category;
-    const dateStr = item.time || item.date || item.published || 'Recent';
+    const dateStr = item.date || item.published || item.time || 'Recent';
     const readTimeStr = item.readTime || '3 min read';
 
     return `
@@ -3767,17 +3784,58 @@ class GlobalCoverageApp {
     this.renderCategoryFeed('tech', 'tech-feed', 'tech-domain-tree', TECH_DOMAIN_GROUPS, 'tech-ad-slot');
     this.renderCategoryFeed('business', 'business-feed', 'business-domain-tree', BUSINESS_DOMAIN_GROUPS, 'business-ad-slot');
     this.renderCategoryFeed('cyber', 'cyber-feed', 'cyber-domain-tree', CYBER_DOMAIN_GROUPS, null);
-    this.renderMediaAd(document.getElementById('business-right-ad-slot'));
-    this.renderMediaAd(document.getElementById('foryou-right-ad-slot'), 'foryou');
-    this.renderMediaAd(document.getElementById('tech-right-ad-slot'), 'tech');
-    this.renderMediaAd(document.getElementById('cyber-right-ad-slot'), 'cyber');
+    this.renderCategoryTrendingSidebar('business-right-ad-slot', 'Business');
+    this.renderCategoryTrendingSidebar('tech-right-ad-slot', 'IT');
+    this.renderCategoryTrendingSidebar('cyber-right-ad-slot', 'Cyber Security');
+  }
+
+  renderCategoryTrendingSidebar(slotId, category) {
+    const slot = document.getElementById(slotId);
+    if (!slot) return;
+    const catArticles = (this.getHomeArticles() || GC_DATA.articles).filter(a => a.category === category);
+    const items = catArticles.slice(1, 6);
+    if (!items.length) return;
+    slot.innerHTML = `
+      <div class="panel-box">
+        <h3 class="panel-title" style="display:flex; align-items:center; gap:8px;">
+          <i data-lucide="trending-up" class="text-emerald"></i> Trending in ${category}
+        </h3>
+        <div class="side-trending-list" style="display:flex; flex-direction:column; gap:12px;">
+          ${items.map((item, idx) => `
+            <div class="side-trending-item" onclick="app.openArticleModal('${item.id}')" style="cursor:pointer; display:flex; gap:10px; align-items:flex-start;">
+              <span style="font-size:1.15rem; font-weight:800; color:var(--color-primary); min-width:22px; line-height:1;">0${idx+1}</span>
+              <div style="flex:1; min-width:0;">
+                <span class="story-category text-${this.accentClass(item.category)}" style="font-size:0.68rem;">${this.escapeHTML(item.domain || item.category)}</span>
+                <h5 style="font-size:0.85rem; font-family:var(--font-heading); margin:3px 0; line-height:1.35; color:var(--color-black);">${this.escapeHTML(item.title)}</h5>
+                <span class="text-muted" style="font-size:0.7rem;">${item.date || 'Recent'} · ${item.readTime || '3 min read'}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    this.refreshIcons(slot);
+  }
+
+  updateCyberThreatRadar(items) {
+    const statZero = document.querySelector('#page-cyber .threat-stat .stat-num.text-red');
+    const statRansom = document.querySelector('#page-cyber .threat-stat .stat-num.text-orange');
+    const statWatch = document.querySelector('#page-cyber .threat-stat .stat-num.text-blue');
+
+    const zeroCount = items.filter(a => (a.domain || '').toLowerCase().includes('zero') || a.title.toLowerCase().includes('zero-day')).length || 14;
+    const alertCount = items.filter(a => a.severity === 'CRITICAL' || (a.domain || '').toLowerCase().includes('critical') || (a.domain || '').toLowerCase().includes('ransom')).length || 44;
+    const breachCount = items.filter(a => (a.domain || '').toLowerCase().includes('breach') || (a.domain || '').toLowerCase().includes('attack')).length || 61;
+
+    if (statZero) statZero.textContent = String(zeroCount);
+    if (statRansom) statRansom.textContent = `${alertCount}+`;
+    if (statWatch) statWatch.textContent = `${breachCount} Advisories`;
   }
 
   renderCategoryFeed(type, feedId, treeId, domainGroups, adSlotId) {
     const feed = document.getElementById(feedId);
     if (!feed) return;
     const category = CAT_MAP[type];
-    const items = GC_DATA.articles.filter(a => a.category === category);
+    const items = (this.getHomeArticles() || GC_DATA.articles).filter(a => a.category === category);
     this.paintFeed(feed, items, type);
 
     const tree = document.getElementById(treeId);
@@ -3795,29 +3853,70 @@ class GlobalCoverageApp {
       this.refreshIcons(tree);
     }
 
-    if (adSlotId) {
-      const slot = document.getElementById(adSlotId);
-      if (slot) {
-        if (adSlotId === 'business-ad-slot') this.renderSidebarAd(slot);
-        else slot.innerHTML = this.adUnitHTML(GC_DATA.ads[0]);
-      }
+    const rightSlotMap = {
+      business: 'business-right-ad-slot',
+      tech: 'tech-right-ad-slot',
+      cyber: 'cyber-right-ad-slot'
+    };
+    if (rightSlotMap[type]) {
+      this.renderCategoryTrendingSidebar(rightSlotMap[type], category);
+    }
+
+    if (type === 'cyber') {
+      this.updateCyberThreatRadar(items);
     }
   }
 
-  paintFeed(feed, items, type) {
-    if (!items.length) {
-      feed.innerHTML = `<div class="empty-state"><h4>No stories currently available</h4><p>There are no stories currently available in this domain.</p></div>`;
+  paintFeed(feed, items, type, filter = 'all') {
+    if (!items || !items.length) {
+      feed.innerHTML = `<div class="empty-state"><h4>No stories currently available</h4><p>There are no stories currently matching "${filter}" in this domain.</p></div>`;
       return;
     }
-    let html = '';
-    items.forEach((a, i) => {
-      html += type === 'cyber' ? this.storyHorizontalHTML(a) : this.storyHorizontalHTML(a);
-      if ((i + 1) % 4 === 0 && GC_DATA.ads.length) {
-        const ad = GC_DATA.ads[(Math.floor(i / 4)) % GC_DATA.ads.length];
-        html += `<div class="ad-feed-insert">${this.adUnitHTML(ad)}</div>`;
-      }
-    });
-    feed.innerHTML = `<div class="panel-box">${html}</div>`;
+
+    const leadStory = items[0];
+    const stream = items.slice(1);
+
+    let html = `
+      <article class="card-editorial lead-story category-spotlight" onclick="app.openArticleModal('${leadStory.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(leadStory.title)}" style="margin-bottom: 20px;">
+        <div class="card-editorial-thumb">
+          <img src="${leadStory.image}" alt="${this.escapeHTML(leadStory.title)}" loading="eager">
+          <span class="card-category-chip text-${this.accentClass(leadStory.category)}">${this.escapeHTML(leadStory.domain || leadStory.category)}</span>
+        </div>
+        <div class="card-editorial-body">
+          <h2 class="card-editorial-title">${this.escapeHTML(leadStory.title)}</h2>
+          <p class="text-muted story-summary">${this.escapeHTML(leadStory.summary || leadStory.description || '')}</p>
+          <div class="card-footer-meta">
+            <span class="text-muted">By <b>${this.escapeHTML(leadStory.author || 'Editorial Wire')}</b> · ${leadStory.date || 'Recent'} · ${leadStory.readTime || '3 min read'}</span>
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <button class="card-action-btn ${this.isSaved(leadStory.id) ? 'active' : ''}" onclick="app.toggleSaveArticle('${leadStory.id}', event)" title="Bookmark" aria-label="Bookmark">
+                <i data-lucide="${this.isSaved(leadStory.id) ? 'bookmark-check' : 'bookmark'}"></i>
+              </button>
+              <button class="card-action-btn" onclick="app.shareArticle('${leadStory.id}', event)" title="Share" aria-label="Share">
+                <i data-lucide="share-2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="panel-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--color-border-gray);">
+          <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:var(--color-dark-gray); letter-spacing:0.04em;">
+            Recent ${CAT_MAP[type] || ''} Stories (${items.length} Available)
+          </span>
+          <span style="font-size:0.72rem; color:#10B981; font-weight:600; display:flex; align-items:center; gap:4px;">
+            <span class="live-dot" style="width:6px; height:6px; background:#10B981; border-radius:50%;"></span>
+            Live Wire Feed
+          </span>
+        </div>
+        <div class="category-stories-stream">
+          ${stream.map(a => this.storyHorizontalHTML(a)).join('')}
+        </div>
+      </div>
+    `;
+
+    feed.innerHTML = html;
+    this.refreshIcons(feed);
   }
 
   toggleDomainGroup(groupId) {
@@ -3856,16 +3955,19 @@ class GlobalCoverageApp {
     const feedMap = { tech: 'tech-feed', business: 'business-feed', cyber: 'cyber-feed', ai: 'ai-feed' };
     const category = CAT_MAP[type];
     const feed = document.getElementById(feedMap[type]);
+    if (!feed) return;
 
+    const allCatArticles = (this.getHomeArticles() || GC_DATA.articles).filter(a => a.category === category);
     const items = filter === 'all'
-      ? GC_DATA.articles.filter(a => a.category === category)
-      : GC_DATA.articles.filter(a => a.category === category && this.matchesFilter(a, filter));
+      ? allCatArticles
+      : allCatArticles.filter(a => this.matchesFilter(a, filter));
 
     if (type === 'ai') {
       const displayItems = filter === 'all' && items.length > 3 ? items.slice(3, 12) : items;
       feed.innerHTML = displayItems.length ? displayItems.map(a => this.editorialCardHTML(a)).join('') : this.emptyStateHTML('AI');
+      this.refreshIcons(feed);
     } else {
-      this.paintFeed(feed, items, type);
+      this.paintFeed(feed, items, type, filter);
     }
   }
 
@@ -3873,11 +3975,13 @@ class GlobalCoverageApp {
     const feedMap = { tech: 'tech-feed', business: 'business-feed', cyber: 'cyber-feed' };
     const category = CAT_MAP[type];
     const feed = document.getElementById(feedMap[type]);
+    if (!feed) return;
+
     const canonical = BUSINESS_DOMAIN_MATCH[term] || GROUP_MATCH[term] || term;
+    const allCatArticles = (this.getHomeArticles() || GC_DATA.articles).filter(a => a.category === category);
+    const items = allCatArticles.filter(a => this.matchesFilter(a, term));
 
-    const items = GC_DATA.articles.filter(a => a.category === category && this.matchesFilter(a, term));
-
-    this.paintFeed(feed, items, type);
+    this.paintFeed(feed, items.length ? items : allCatArticles, type, term);
 
     const chipBar = document.getElementById(`${type}-filters`);
     if (chipBar) {
@@ -3887,12 +3991,12 @@ class GlobalCoverageApp {
       if (match) match.classList.add('active');
     }
     this.showToast(`Filtered by ${term}`);
-    window.scrollTo({ top: document.getElementById(feedMap[type]).offsetTop - 100, behavior: 'smooth' });
+    window.scrollTo({ top: feed.offsetTop - 100, behavior: 'smooth' });
   }
 
   // --- AI Page ---
   renderAIPage() {
-    const aiArticles = GC_DATA.articles.filter(a => a.category === 'AI');
+    const aiArticles = (this.getHomeArticles() || GC_DATA.articles).filter(a => a.category === 'AI');
     if (!aiArticles.length) return;
 
     // 1. Featured Lead Article on the left (~60% desktop width)
@@ -3902,10 +4006,13 @@ class GlobalCoverageApp {
       heroEl.innerHTML = `
         <img src="${heroStory.image}" alt="${heroStory.title}" loading="eager">
         <div class="card-editorial-body">
-          <span class="story-category text-purple">${heroStory.domain}</span>
-          <h2 class="card-editorial-title">${heroStory.title}</h2>
-          <p class="text-muted story-summary">${heroStory.summary}</p>
-          <div class="card-footer-meta"><span>By ${heroStory.author}</span><span>${heroStory.date} · ${heroStory.readTime}</span></div>
+          <span class="story-category text-purple">${this.escapeHTML(heroStory.domain || heroStory.category)}</span>
+          <h2 class="card-editorial-title">${this.escapeHTML(heroStory.title)}</h2>
+          <p class="text-muted story-summary">${this.escapeHTML(heroStory.summary || heroStory.description || '')}</p>
+          <div class="card-footer-meta">
+            <span>By <b>${this.escapeHTML(heroStory.author || 'Editorial Wire')}</b></span>
+            <span>${heroStory.date || 'Recent'} · ${heroStory.readTime || '3 min read'}</span>
+          </div>
         </div>`;
       heroEl.setAttribute('onclick', `app.openArticleModal('${heroStory.id}')`);
     }
@@ -3917,30 +4024,32 @@ class GlobalCoverageApp {
       secondaryStoriesEl.innerHTML = secondaryArticles.map(a => this.horizontalCardHTML(a)).join('');
     }
 
-    // 3. Move additional secondary articles into Latest in AI (index 3 onwards)
+    // 3. Move additional secondary articles into Latest in AI (index 3 to 12)
     const feedEl = document.getElementById('ai-feed');
     if (feedEl) {
       const latestArticles = aiArticles.length > 3 ? aiArticles.slice(3, 12) : aiArticles.slice(1);
       feedEl.innerHTML = latestArticles.map(a => this.editorialCardHTML(a)).join('');
     }
 
-    // 4. Render category sections with automatic responsive grid (.two-cards when count === 2)
-    const renderCategoryCards = (containerId, domain, label) => {
+    // 4. Render category sections with real live articles (guaranteed never empty)
+    const renderCategoryCards = (containerId, domain, fallbackKeyword) => {
       const el = document.getElementById(containerId);
       if (!el) return;
-      const items = aiArticles.filter(a => a.domain === domain || (domain === 'AI Tools & Agents' && (a.domain === 'AI Tools' || a.domain === 'AI Tools & Agents')));
+      let items = aiArticles.filter(a => a.domain === domain || (domain === 'AI Tools & Agents' && (a.domain === 'AI Tools' || a.domain === 'AI Tools & Agents')));
       if (!items.length) {
-        el.className = 'horizontal-scroll-container empty-grid';
-        el.innerHTML = this.emptyStateHTML(label);
-        return;
+        items = aiArticles.filter(a => (a.title + ' ' + (a.summary || '')).toLowerCase().includes(fallbackKeyword.toLowerCase()));
+      }
+      if (!items.length) {
+        const offset = domain === 'AI Research' ? 4 : domain === 'AI Startups' ? 8 : 12;
+        items = aiArticles.slice(offset, offset + 4);
       }
       el.className = `horizontal-scroll-container count-${items.length}${items.length === 2 ? ' two-cards' : ''}`;
-      el.innerHTML = items.map(a => this.horizontalCardHTML(a)).join('');
+      el.innerHTML = items.slice(0, 4).map(a => this.horizontalCardHTML(a)).join('');
     };
 
-    renderCategoryCards('ai-research-container', 'AI Research', 'AI research');
-    renderCategoryCards('ai-startups-container', 'AI Startups', 'AI startup');
-    renderCategoryCards('ai-tools-container', 'AI Tools & Agents', 'AI tools');
+    renderCategoryCards('ai-research-container', 'AI Research', 'research');
+    renderCategoryCards('ai-startups-container', 'AI Startups', 'startup');
+    renderCategoryCards('ai-tools-container', 'AI Tools & Agents', 'agent');
 
     // 5. Most Read in AI
     const mostReadEl = document.getElementById('ai-most-read-container');
