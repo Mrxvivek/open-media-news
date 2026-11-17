@@ -43,7 +43,12 @@
                 <span class="market-ticker-item">NASDAQ: <b class="text-emerald">+1.2%</b></span>
                 <span class="market-ticker-item">CYBER THREAT LEVEL: <b class="text-danger">ELEVATED</b></span>
                 <div class="top-bar-datetime">
-                    <span class="top-bar-date"><i data-lucide="calendar" aria-hidden="true"></i><span id="current-date"></span></span>
+                    <div class="top-bar-date-row">
+                        <span class="top-bar-date"><i data-lucide="calendar" aria-hidden="true"></i><span id="current-date"></span></span>
+                        <button class="top-bar-tz-btn" id="world-clock-btn" onclick="app.openWorldClocksModal()" title="View World Timezones &amp; Global Market Clocks" aria-label="World Timezones">
+                            <i data-lucide="globe"></i> <span id="current-tz-badge">IST</span> <i data-lucide="chevron-down" style="width:10px;height:10px;"></i>
+                        </button>
+                    </div>
                     <span class="ist-clock" id="live-ist-clock"><span class="analog-clock" aria-hidden="true"><span class="analog-clock-hand analog-clock-hour"></span><span class="analog-clock-hand analog-clock-minute"></span><span class="analog-clock-hand analog-clock-second"></span><span class="analog-clock-center"></span></span><span id="ist-clock-text">--:--:-- -- IST</span></span>
                 </div>
             </div>
@@ -74,7 +79,7 @@
 
             <div class="header-actions">
                 <button class="btn btn-outline btn-sm auth-guest" onclick="app.openAuthModal('login')">Login</button>
-                <button class="btn btn-primary btn-sm auth-guest" onclick="app.openAuthModal('register')">Register</button>
+                <button class="btn btn-primary btn-sm auth-guest" onclick="app.openAuthModal('register')">Register Now</button>
 
                 <button class="icon-btn" id="search-trigger-btn" title="Search" aria-label="Open search" onclick="app.openSearch()">
                     <i data-lucide="search"></i>
@@ -134,7 +139,7 @@
         </nav>
         <div class="mobile-auth-actions auth-guest" aria-label="Account">
             <button class="btn btn-outline btn-sm" type="button" onclick="app.closeMobileNav(); app.openAuthModal('login')">Login</button>
-            <button class="btn btn-primary btn-sm" type="button" onclick="app.closeMobileNav(); app.openAuthModal('register')">Register</button>
+            <button class="btn btn-primary btn-sm" type="button" onclick="app.closeMobileNav(); app.openAuthModal('register')">Register Now</button>
         </div>
     </div>
 
@@ -593,11 +598,11 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="pub-image">Thumbnail Image URL</label>
-                                <input type="url" id="pub-image" class="form-control" placeholder="https://images.unsplash.com/...">
+                                <label for="pub-image">Thumbnail / Poster Image URL</label>
+                                <input type="text" id="pub-image" class="form-control" placeholder="https://images.unsplash.com/... or choose local image below">
                             </div>
                             <div class="form-group">
-                                <label for="article-image-file">Or choose a local image</label>
+                                <label for="article-image-file">Or choose a local poster image</label>
                                 <input type="file" id="article-image-file" accept="image/*" class="form-control" onchange="app.handleLocalImageSelection('article-image-file', 'pub-image', 'pub-image-preview')">
                                 <div id="pub-image-preview" style="margin-top:10px; min-height:20px;"></div>
                             </div>
@@ -613,7 +618,8 @@
                                 <label for="pub-tags">Tags (comma separated)</label>
                                 <input type="text" id="pub-tags" class="form-control" placeholder="e.g. AI, Enterprise, Policy">
                             </div>
-                            <button type="submit" class="btn btn-primary"><i data-lucide="send"></i> Submit for Editorial Review</button>
+                            <button type="submit" class="btn btn-primary" id="btn-publish-submit"><i data-lucide="send"></i> Publish News to Breaking Wire</button>
+                            <p class="text-muted" style="font-size:0.8rem; margin-top:8px;"><i data-lucide="check-circle" class="text-emerald"></i> Automatically syndicated to live breaking ticker, wire feed, and category tabs.</p>
                         </form>
                     </div>
                 </div>
@@ -914,7 +920,7 @@
                     <p>Review and moderate article submissions, perform batch editorial actions, edit live articles, and manage platform publisher/admin accounts.</p>
                 </div>
 
-                <!-- Admin Navigation Tabs: 3 Consolidated Tabs -->
+                <!-- Admin Navigation Tabs: 5 Consolidated Tabs -->
                 <div class="admin-nav-tabs">
                     <button class="admin-tab-btn active" id="tab-btn-submissions" onclick="app.switchAdminTab('submissions')">
                         <i data-lucide="file-check"></i> Submissions Pipeline
@@ -924,6 +930,12 @@
                     </button>
                     <button class="admin-tab-btn" id="tab-btn-create" onclick="app.switchAdminTab('create')">
                         <i data-lucide="square-pen"></i> Create / Publish Article
+                    </button>
+                    <button class="admin-tab-btn" id="tab-btn-inquiries" onclick="app.switchAdminTab('inquiries')">
+                        <i data-lucide="briefcase"></i> Inquiries
+                    </button>
+                    <button class="admin-tab-btn" id="tab-btn-audit" onclick="app.switchAdminTab('audit')">
+                        <i data-lucide="shield-alert"></i> Audit Trail
                     </button>
                 </div>
 
@@ -1112,6 +1124,66 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- TAB 4: BUSINESS INQUIRIES -->
+                <div id="admin-tab-inquiries" class="admin-tab-content" style="display:none;">
+                    <div class="admin-card">
+                        <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                            <div>
+                                <h3 class="panel-title"><i data-lucide="briefcase"></i> Inbound Business Inquiries</h3>
+                                <p class="text-muted" style="font-size:0.85rem;">Advertising, sponsored briefings, and commercial partnerships tracked under 24h SLA.</p>
+                            </div>
+                            <button class="btn btn-outline btn-sm" onclick="app.loadAdminInquiries()"><i data-lucide="refresh-cw"></i> Refresh</button>
+                        </div>
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ref ID</th>
+                                        <th>Contact / Company</th>
+                                        <th>Type &amp; Budget</th>
+                                        <th>Message</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-inquiries-table-body">
+                                    <tr><td colspan="7" style="text-align:center; padding:24px;">Loading inquiries...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: AUDIT TRAIL -->
+                <div id="admin-tab-audit" class="admin-tab-content" style="display:none;">
+                    <div class="admin-card">
+                        <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                            <div>
+                                <h3 class="panel-title"><i data-lucide="shield-alert"></i> Enterprise Audit Trail</h3>
+                                <p class="text-muted" style="font-size:0.85rem;">Tamper-evident logs of administrative actions, user creation/deletion, and moderation status transitions.</p>
+                            </div>
+                            <button class="btn btn-outline btn-sm" onclick="app.loadAdminAuditLogs()"><i data-lucide="refresh-cw"></i> Refresh</button>
+                        </div>
+                        <div class="admin-table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                        <th>Actor</th>
+                                        <th>Target</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-audit-table-body">
+                                    <tr><td colspan="5" style="text-align:center; padding:24px;">Loading audit logs...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1120,32 +1192,115 @@
     <div class="modal-overlay" id="modal-auth" role="dialog" aria-modal="true" aria-label="Account access">
         <div class="admin-modal-card">
             <div class="admin-modal-header"><h3 id="auth-modal-title"><i data-lucide="log-in"></i> Login</h3><button class="icon-btn" onclick="app.closeAuthModal()" aria-label="Close"><i data-lucide="x"></i></button></div>
+            
+            <!-- Login Form -->
             <form id="auth-login-form" onsubmit="app.handleLogin(event)">
-                <div class="admin-form-group"><label for="login-email">Email</label><input id="login-email" class="form-control" type="email" required></div>
+                <div class="admin-form-group"><label for="login-email">Work or Personal Email</label><input id="login-email" class="form-control" type="email" required placeholder="you@domain.com"></div>
                 <div class="admin-form-group">
-                    <label for="login-password">Password</label>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <label for="login-password">Password</label>
+                        <a href="#forgot" onclick="event.preventDefault(); app.openAuthModal('forgot');" class="auth-helper-link">Forgot password?</a>
+                    </div>
                     <div class="password-input-wrapper">
-                        <input id="login-password" class="form-control" type="password" required>
+                        <input id="login-password" class="form-control" type="password" required placeholder="Enter your password">
                         <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('login-password', this)" aria-label="Toggle password visibility" title="Show / Hide password">
                             <i data-lucide="eye"></i>
                         </button>
                     </div>
                 </div>
-                <button class="btn btn-primary" type="submit">Login</button> <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('register')">Create an account</button>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="btn btn-primary" type="submit" style="flex:1;"><i data-lucide="log-in"></i> Login</button>
+                    <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('register')">Create an account</button>
+                </div>
             </form>
+
+            <!-- Registration Form with Live Password Requirements -->
             <form id="auth-register-form" onsubmit="app.handleRegister(event)" hidden>
-                <div class="admin-form-group"><label for="register-name">Name</label><input id="register-name" class="form-control" required></div>
-                <div class="admin-form-group"><label for="register-email">Email</label><input id="register-email" class="form-control" type="email" required></div>
+                <div class="admin-form-group"><label for="register-name">Full Name</label><input id="register-name" class="form-control" required placeholder="e.g. Alex Morgan"></div>
+                <div class="admin-form-group"><label for="register-email">Email Address</label><input id="register-email" class="form-control" type="email" required placeholder="alex@domain.com"></div>
                 <div class="admin-form-group">
-                    <label for="register-password">Password</label>
+                    <label for="register-password">Create Password</label>
                     <div class="password-input-wrapper">
-                        <input id="register-password" class="form-control" type="password" minlength="8" required>
+                        <input id="register-password" class="form-control" type="password" minlength="8" required placeholder="Min 8 characters" oninput="app.checkPasswordStrength(this.value)">
                         <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('register-password', this)" aria-label="Toggle password visibility" title="Show / Hide password">
                             <i data-lucide="eye"></i>
                         </button>
                     </div>
+                    <div class="password-requirements-box" id="register-pwd-reqs">
+                        <span class="pwd-req-title">Password must contain:</span>
+                        <ul class="pwd-req-list">
+                            <li id="req-len" class="req-item"><i data-lucide="circle"></i> At least 8 characters</li>
+                            <li id="req-upper" class="req-item"><i data-lucide="circle"></i> One uppercase letter (A-Z)</li>
+                            <li id="req-lower" class="req-item"><i data-lucide="circle"></i> One lowercase letter (a-z)</li>
+                            <li id="req-digit" class="req-item"><i data-lucide="circle"></i> One number (0-9)</li>
+                        </ul>
+                    </div>
                 </div>
-                <button class="btn btn-primary" type="submit">Register</button> <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('login')">Already have an account?</button>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="btn btn-primary" type="submit" style="flex:1;"><i data-lucide="user-plus"></i> Register Now</button>
+                    <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('login')">Already have an account?</button>
+                </div>
+            </form>
+
+            <!-- Email Verification Form -->
+            <form id="auth-verify-form" onsubmit="app.handleVerifyEmail(event)" hidden>
+                <p class="text-muted" style="font-size:0.88rem; margin-bottom:14px; line-height:1.5;">
+                    Please enter the 6-digit verification code sent to <b id="verify-email-display">your email</b> to activate full platform access.
+                </p>
+                <div class="admin-form-group">
+                    <label for="verify-code">6-Digit Verification Code</label>
+                    <input id="verify-code" class="form-control" type="text" maxlength="6" pattern="[0-9]{6}" required placeholder="e.g. 123456" style="font-size:1.4rem; letter-spacing:0.2em; text-align:center; font-family:monospace;">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="btn btn-primary" type="submit" style="flex:1;"><i data-lucide="check-circle-2"></i> Verify Email</button>
+                    <button class="btn btn-outline" type="button" onclick="app.handleResendVerification()">Resend Code</button>
+                </div>
+                <div style="text-align:center; margin-top:14px;">
+                    <button class="btn btn-ghost btn-xs" type="button" onclick="app.openAuthModal('login')">Return to Login</button>
+                </div>
+            </form>
+
+            <!-- Forgot Password Form -->
+            <form id="auth-forgot-form" onsubmit="app.handleForgotPassword(event)" hidden>
+                <p class="text-muted" style="font-size:0.88rem; margin-bottom:14px; line-height:1.5;">
+                    Enter your registered email address. We'll generate a secure password recovery token so you can safely reset your password.
+                </p>
+                <div class="admin-form-group">
+                    <label for="forgot-email">Account Email Address</label>
+                    <input id="forgot-email" class="form-control" type="email" required placeholder="you@domain.com">
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="btn btn-primary" type="submit" style="flex:1;"><i data-lucide="send"></i> Send Recovery Token</button>
+                    <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('login')">Cancel</button>
+                </div>
+            </form>
+
+            <!-- Reset Password Form -->
+            <form id="auth-reset-form" onsubmit="app.handleResetPassword(event)" hidden>
+                <p class="text-muted" style="font-size:0.88rem; margin-bottom:14px; line-height:1.5;">
+                    Enter the recovery token and choose a new secure password meeting platform security standards.
+                </p>
+                <div class="admin-form-group">
+                    <label for="reset-email">Account Email</label>
+                    <input id="reset-email" class="form-control" type="email" required readonly>
+                </div>
+                <div class="admin-form-group">
+                    <label for="reset-token">Recovery Token</label>
+                    <input id="reset-token" class="form-control" type="text" required placeholder="Paste recovery token" style="font-family:monospace;">
+                </div>
+                <div class="admin-form-group">
+                    <label for="reset-new-password">New Password</label>
+                    <div class="password-input-wrapper">
+                        <input id="reset-new-password" class="form-control" type="password" minlength="8" required placeholder="Min 8 characters, upper, lower, digit">
+                        <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('reset-new-password', this)" aria-label="Toggle password visibility">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:16px;">
+                    <button class="btn btn-primary" type="submit" style="flex:1;"><i data-lucide="lock"></i> Update Password</button>
+                    <button class="btn btn-ghost" type="button" onclick="app.openAuthModal('login')">Back to Login</button>
+                </div>
             </form>
         </div>
     </div>
@@ -1159,7 +1314,8 @@
                     <p>Direct intelligence briefs delivered to your inbox every morning. Free, curated, and high-impact.</p>
                 </div>
                 <form class="newsletter-form" onsubmit="app.handleNewsletterSubscribe(event)">
-                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                    <input type="email" id="newsletter-email" class="form-control" placeholder="Enter your work email address..." required style="min-width: 280px;">
+                    <button type="submit" class="btn btn-primary"><i data-lucide="mail"></i> Subscribe</button>
                 </form>
             </div>
         </div>
@@ -1376,6 +1532,46 @@
         <div class="event-modal-card legal-modal-card">
             <button class="icon-btn close-event-btn" onclick="app.closeLegalPage()" aria-label="Close legal information"><i data-lucide="x"></i></button>
             <div id="legal-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- WORLD CLOCKS & FINANCIAL HUBS MODAL -->
+    <div class="modal-overlay" id="modal-world-clocks" role="dialog" aria-modal="true" aria-label="World Market Clocks &amp; Timezones" onclick="if (event.target === this) app.closeWorldClocksModal()">
+        <div class="world-clocks-modal-card">
+            <div class="admin-modal-header">
+                <h3><i data-lucide="globe" class="text-blue"></i> World Timezones &amp; Global Market Clocks</h3>
+                <button class="icon-btn" onclick="app.closeWorldClocksModal()" aria-label="Close"><i data-lucide="x"></i></button>
+            </div>
+            <p class="text-muted" style="font-size:0.85rem; margin:6px 0 16px;">
+                Track active global trading hours and tech hub synchronizations. Click any hub card to set it as your primary header clock.
+            </p>
+            <div class="world-clocks-grid" id="world-clocks-grid">
+                <!-- Dynamically populated by app.updateWorldClocksModalContent() -->
+            </div>
+            <div class="world-clocks-modal-footer">
+                <span class="text-muted" style="font-size:0.75rem;"><i data-lucide="shield" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i> Persisted across sessions via local storage.</span>
+                <button class="btn btn-secondary btn-sm" onclick="app.closeWorldClocksModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUSINESS INQUIRY CONFIRMATION MODAL -->
+    <div class="modal-overlay" id="modal-inquiry-confirmed" role="dialog" aria-modal="true" aria-label="Inquiry Received" onclick="if (event.target === this) app.closeInquiryConfirmationModal()">
+        <div class="admin-modal-card" style="max-width:520px; text-align:center;">
+            <div style="font-size:2.4rem; margin-bottom:8px;">🎉</div>
+            <h3 style="font-family:var(--font-heading); margin-bottom:8px; color:var(--color-deep-navy);">Business Inquiry Received</h3>
+            <p class="text-muted" id="inquiry-confirm-message" style="font-size:0.88rem; line-height:1.5; margin-bottom:14px;">
+                Thank you for contacting OPEN MEDIA. Your advertising and partnership request has been recorded.
+            </p>
+            <div class="inquiry-ref-box">
+                <span class="ref-label">Inquiry Reference ID</span>
+                <code class="ref-code" id="inquiry-confirm-id">OM-ADV-XXXX</code>
+            </div>
+            <p style="font-size:0.85rem; color:var(--color-royal-blue); margin:14px 0 20px; font-weight:500;">
+                <i data-lucide="clock" style="width:14px;height:14px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>
+                <span id="inquiry-confirm-sla">Our partnership team will review your brief and contact you within 1 business day.</span>
+            </p>
+            <button class="btn btn-primary" onclick="app.closeInquiryConfirmationModal()" style="min-width:120px;">Got it</button>
         </div>
     </div>
 

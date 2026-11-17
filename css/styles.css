@@ -2935,3 +2935,392 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     grid-template-columns: 1fr;
   }
 }
+
+/* ==============================================================
+   ENTERPRISE JOURNEYS: WORLD TIMEZONES, STRAIGHT BRIEFS & TRUST
+   ============================================================== */
+
+/* 1. Header Timezone Switcher */
+.top-bar-date-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.top-bar-tz-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #38BDF8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.top-bar-tz-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  color: #FFFFFF;
+  border-color: #38BDF8;
+}
+
+.top-bar-tz-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* 2. World Clocks Modal */
+.world-clocks-modal-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  max-width: 760px;
+  width: 92%;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.world-clocks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.world-clock-card {
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.world-clock-card:hover {
+  border-color: var(--color-royal-blue);
+  background: #F1F5F9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.world-clock-card.selected {
+  border-color: var(--color-royal-blue);
+  background: #EFF6FF;
+}
+
+.world-clock-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.world-clock-city {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--color-deep-navy);
+}
+
+.world-clock-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748B;
+  background: #E2E8F0;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.world-clock-time {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-deep-navy);
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 2px;
+  font-family: var(--font-heading);
+}
+
+.world-clock-date {
+  font-size: 0.75rem;
+  color: #64748B;
+  margin-bottom: 10px;
+}
+
+.world-clock-bottom {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px dashed #CBD5E1;
+}
+
+.market-status-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.market-status-pill.market-open {
+  color: #059669;
+}
+
+.market-status-pill.market-closed {
+  color: #64748B;
+}
+
+.market-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.market-open .market-dot {
+  background: #10B981;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.market-closed .market-dot {
+  background: #94A3B8;
+}
+
+.active-tz-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-royal-blue);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.world-clocks-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #E2E8F0;
+}
+
+/* 3. In 50 Words Straight Brief Box */
+.straight-brief-box {
+  background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+  border-left: 4px solid #16A34A;
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  margin: 16px 0 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.straight-brief-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.straight-brief-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #15803D;
+  text-transform: uppercase;
+}
+
+.straight-brief-pill svg {
+  width: 13px;
+  height: 13px;
+}
+
+.straight-brief-meta {
+  font-size: 0.7rem;
+  color: #166534;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.straight-brief-meta svg {
+  width: 12px;
+  height: 12px;
+}
+
+.straight-brief-text {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #14532D;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* 4. Verified Syndicated Source Attribution Card */
+.wire-source-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.wire-source-info {
+  flex: 1 1 auto;
+}
+
+.wire-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-royal-blue);
+  background: #EFF6FF;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.wire-source-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.wire-source-name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--color-deep-navy);
+  margin: 0 0 4px;
+}
+
+.wire-source-note {
+  font-size: 0.8rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.wire-external-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* 5. Password Requirements Checklist */
+.password-requirements-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 8px 0 14px;
+}
+
+.pwd-req-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-deep-navy);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.pwd-req-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.req-item {
+  font-size: 0.72rem;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s ease;
+}
+
+.req-item svg {
+  width: 11px;
+  height: 11px;
+  color: #94A3B8;
+}
+
+.req-item.valid {
+  color: #15803D;
+  font-weight: 600;
+}
+
+.req-item.valid svg {
+  color: #16A34A;
+}
+
+.auth-helper-link {
+  font-size: 0.8rem;
+  color: var(--color-royal-blue);
+  text-decoration: none;
+}
+
+.auth-helper-link:hover {
+  text-decoration: underline;
+}
+
+/* 6. Business Inquiry Confirmation Box */
+.inquiry-ref-box {
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  padding: 12px;
+  display: inline-block;
+  margin: 8px auto;
+}
+
+.ref-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+
+.ref-code {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-royal-blue);
+  letter-spacing: 0.05em;
+}
+
+.content-type-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-left: 6px;
+}
+
+.content-type-badge.badge-news { background: #EFF6FF; color: #1D4ED8; }
+.content-type-badge.badge-analysis { background: #FAF5FF; color: #7E22CE; }
+.content-type-badge.badge-community { background: #F0FDF4; color: #15803D; }
+.content-type-badge.badge-sponsored { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+

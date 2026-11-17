@@ -4,6 +4,8 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { validateBody, createArticleSchema, createCommentSchema, resubmitArticleSchema } from '../middleware/validation.js';
 import { emitRealtime } from '../realtime.js';
 import { resolveCategory } from '../services/newsClassifier.js';
+import { getDiverseImageUrl, generateStraightBrief } from '../services/rssService.js';
+import { recordAudit } from '../services/auditService.js';
 
 export const articlesRouter = Router();
 
@@ -178,30 +180,52 @@ articlesRouter.get('/:id', async (req: Request, res: Response) => {
 // POST /api/articles (Publisher or Admin: create/submit post)
 articlesRouter.post('/', requireRole(['PUBLISHER', 'ADMIN']), validateBody(createArticleSchema), async (req: Request, res: Response) => {
   try {
-    const { title, summary, body, category, domain, image, imageUrl, status = 'PENDING' } = req.body;
+    const {
+      title,
+      summary,
+      body,
+      category,
+      domain,
+      image,
+      imageUrl,
+      status = 'PENDING',
+      contentType = 'NEWS',
+      sourceName,
+      sourceUrl,
+      straightBrief
+    } = req.body;
 
     const userRole = req.user!.role;
-    // Only admins can directly create PUBLISHED articles; publishers submit as PENDING or DRAFT
-    let finalStatus: 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'REJECTED' = 'PENDING';
+    // Both PUBLISHER and ADMIN can publish directly to live wire and breaking ticker
+    let finalStatus: 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'REJECTED' = 'PUBLISHED';
     if (status === 'DRAFT') {
       finalStatus = 'DRAFT';
-    } else if (userRole === 'ADMIN' && status === 'PUBLISHED') {
-      finalStatus = 'PUBLISHED';
-    } else {
+    } else if (status === 'PENDING') {
       finalStatus = 'PENDING';
+    } else {
+      finalStatus = 'PUBLISHED';
     }
 
     const slug = slugify(title);
+    const finalImage = image?.trim() || imageUrl?.trim() || getDiverseImageUrl(category.trim(), title.trim());
+    const finalBrief = straightBrief?.trim() || generateStraightBrief(title.trim(), summary.trim(), body.trim());
+    const finalSourceName = sourceName?.trim() || (userRole === 'ADMIN' ? 'OPEN MEDIA Editorial' : req.user!.name);
+    const finalSourceUrl = sourceUrl?.trim() || null;
+    const finalContentType = ['NEWS', 'ANALYSIS', 'COMMUNITY', 'SPONSORED'].includes(contentType) ? contentType : 'NEWS';
 
     const article = await prisma.article.create({
       data: {
         title: title.trim(),
         slug,
         summary: summary.trim(),
+        straightBrief: finalBrief,
         body: body.trim(),
         category: category.trim(),
         domain: domain?.trim() || null,
-        image: image?.trim() || imageUrl?.trim() || null,
+        contentType: finalContentType,
+        sourceName: finalSourceName,
+        sourceUrl: finalSourceUrl,
+        image: finalImage,
         status: finalStatus,
         authorId: req.user!.id,
         publishedAt: finalStatus === 'PUBLISHED' ? new Date() : null
@@ -220,6 +244,15 @@ articlesRouter.post('/', requireRole(['PUBLISHER', 'ADMIN']), validateBody(creat
         status: article.status,
         title: article.title,
         article
+      });
+      // Broadcast breaking ticker update
+      emitRealtime('ticker:new', {
+        id: article.id,
+        title: article.title,
+        category: article.category,
+        domain: article.domain,
+        slug: article.slug,
+        time: article.publishedAt
       });
     }
 
@@ -276,7 +309,7 @@ articlesRouter.patch('/:id/resubmit', requireRole(['PUBLISHER', 'ADMIN']), valid
         body: req.body.body.trim(),
         category: req.body.category.trim(),
         domain: req.body.domain?.trim() || null,
-        image: req.body.image?.trim() || req.body.imageUrl?.trim() || null,
+        image: req.body.image?.trim() || req.body.imageUrl?.trim() || existing.image || getDiverseImageUrl(req.body.category.trim(), req.body.title.trim()),
         status: req.user!.role === 'ADMIN' ? 'PUBLISHED' : 'PENDING',
         editorialFeedback: null,
         publishedAt: req.user!.role === 'ADMIN' ? new Date() : existing.publishedAt

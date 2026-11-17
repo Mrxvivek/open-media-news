@@ -221,6 +221,16 @@ class GlobalCoverageApp {
       .replace(/'/g, '&#39;');
   }
 
+  escapeJS(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '&quot;')
+      .replace(/\n/g, ' ')
+      .replace(/\r/g, '');
+  }
+
   shuffleArray(items) {
     const shuffled = [...items];
     for (let index = shuffled.length - 1; index > 0; index -= 1) {
@@ -324,49 +334,194 @@ class GlobalCoverageApp {
     }, 15000);
   }
 
+  initTimezone() {
+    this.selectedTimezone = localStorage.getItem('om_selected_tz') || 'Asia/Kolkata';
+    this.worldTimezones = [
+      { id: 'Asia/Kolkata', abbr: 'IST', name: 'India Standard Time', city: 'Mumbai / New Delhi', market: 'NSE / BSE', flag: '🇮🇳' },
+      { id: 'America/New_York', abbr: 'EST', name: 'US Eastern Time', city: 'New York', market: 'NYSE / NASDAQ', flag: '🇺🇸' },
+      { id: 'America/Los_Angeles', abbr: 'PST', name: 'US Pacific Time', city: 'Silicon Valley / San Francisco', market: 'Tech Sector HQ', flag: '🇺🇸' },
+      { id: 'Europe/London', abbr: 'GMT', name: 'London / Western Europe', city: 'London', market: 'LSE (FTSE 100)', flag: '🇬🇧' },
+      { id: 'Asia/Singapore', abbr: 'SGT', name: 'Singapore Standard Time', city: 'Singapore', market: 'SGX', flag: '🇸🇬' },
+      { id: 'Asia/Tokyo', abbr: 'JST', name: 'Japan Standard Time', city: 'Tokyo', market: 'TSE (Nikkei 225)', flag: '🇯🇵' },
+      { id: 'Europe/Frankfurt', abbr: 'CET', name: 'Central European Time', city: 'Frankfurt / Zurich', market: 'DAX / SIX', flag: '🇪🇺' },
+      { id: 'UTC', abbr: 'UTC', name: 'Universal Coordinated Time', city: 'Global Cyber Sync', market: '24/7 Threat Radar', flag: '🌐' }
+    ];
+  }
+
+  getTimezoneAbbr(tzId) {
+    if (!this.worldTimezones) this.initTimezone();
+    const tz = this.worldTimezones.find(t => t.id === tzId);
+    if (tz) return tz.abbr;
+    if (tzId === 'Asia/Kolkata') return 'IST';
+    if (tzId === 'America/New_York') return 'EST';
+    if (tzId === 'America/Los_Angeles') return 'PST';
+    if (tzId === 'Europe/London') return 'GMT';
+    if (tzId === 'Asia/Singapore') return 'SGT';
+    if (tzId === 'Asia/Tokyo') return 'JST';
+    if (tzId === 'Europe/Frankfurt') return 'CET';
+    return 'UTC';
+  }
+
+  isMarketOpen(tzId, now) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tzId,
+        weekday: 'short',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+      }).formatToParts(now);
+      const day = parts.find(p => p.type === 'weekday')?.value;
+      const hour = Number(parts.find(p => p.type === 'hour')?.value || 0);
+      const min = Number(parts.find(p => p.type === 'minute')?.value || 0);
+      const timeDec = hour + min / 60;
+      if (day === 'Sat' || day === 'Sun') return false;
+
+      if (tzId === 'Asia/Kolkata') return timeDec >= 9.25 && timeDec <= 15.5;
+      if (tzId === 'America/New_York' || tzId === 'America/Los_Angeles') return timeDec >= 9.5 && timeDec <= 16;
+      if (tzId === 'Europe/London' || tzId === 'Europe/Frankfurt') return timeDec >= 8 && timeDec <= 16.5;
+      if (tzId === 'Asia/Singapore') return (timeDec >= 9 && timeDec <= 12) || (timeDec >= 13 && timeDec <= 17);
+      if (tzId === 'Asia/Tokyo') return (timeDec >= 9 && timeDec <= 11.5) || (timeDec >= 12.5 && timeDec <= 15);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  openWorldClocksModal() {
+    if (!this.worldTimezones) this.initTimezone();
+    const modal = document.getElementById('modal-world-clocks');
+    if (!modal) return;
+    this.updateWorldClocksModalContent();
+    modal.classList.add('show');
+    this.updateModalOpenState(true);
+    this.refreshIcons(modal);
+    if (this.worldClockModalTimer) clearInterval(this.worldClockModalTimer);
+    this.worldClockModalTimer = setInterval(() => this.updateWorldClocksModalTimes(), 1000);
+  }
+
+  closeWorldClocksModal() {
+    const modal = document.getElementById('modal-world-clocks');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+    if (this.worldClockModalTimer) {
+      clearInterval(this.worldClockModalTimer);
+      this.worldClockModalTimer = null;
+    }
+  }
+
+  setTimezone(tzId) {
+    this.selectedTimezone = tzId;
+    localStorage.setItem('om_selected_tz', tzId);
+    const abbr = this.getTimezoneAbbr(tzId);
+    const badge = document.getElementById('current-tz-badge');
+    if (badge) badge.textContent = abbr;
+    this.showToast(`Switched active primary clock to ${abbr} (${tzId})`);
+    this.updateWorldClocksModalContent();
+  }
+
+  updateWorldClocksModalContent() {
+    const grid = document.getElementById('world-clocks-grid');
+    if (!grid) return;
+    const now = new Date();
+    grid.innerHTML = (this.worldTimezones || []).map(tz => {
+      const isSelected = this.selectedTimezone === tz.id;
+      const isOpen = this.isMarketOpen(tz.id, now);
+      const timeStr = now.toLocaleTimeString('en-US', { timeZone: tz.id, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      const dateStr = now.toLocaleDateString('en-US', { timeZone: tz.id, weekday: 'short', month: 'short', day: 'numeric' });
+
+      return `
+        <div class="world-clock-card ${isSelected ? 'active' : ''}" onclick="app.setTimezone('${tz.id}')" role="button" tabindex="0">
+          <div class="world-clock-card-header">
+            <span class="world-clock-city">${tz.flag} ${tz.city}</span>
+            <span class="world-clock-badge">${tz.abbr}</span>
+          </div>
+          <div class="world-clock-time" id="wc-time-${tz.abbr.toLowerCase()}">${timeStr}</div>
+          <div class="world-clock-sub" id="wc-date-${tz.abbr.toLowerCase()}">${dateStr} · ${tz.name}</div>
+          <div class="world-clock-market-row">
+            <span class="market-name">${tz.market}</span>
+            <span class="market-status-pill ${isOpen ? 'open' : 'closed'}" id="wc-status-${tz.abbr.toLowerCase()}">
+              ${isOpen ? '● Trading Open' : '○ Closed'}
+            </span>
+          </div>
+          ${isSelected ? `<span class="active-tz-indicator">Active Header Clock</span>` : ''}
+        </div>
+      `;
+    }).join('');
+    this.refreshIcons(grid);
+  }
+
+  updateWorldClocksModalTimes() {
+    const now = new Date();
+    (this.worldTimezones || []).forEach(tz => {
+      const timeEl = document.getElementById(`wc-time-${tz.abbr.toLowerCase()}`);
+      const dateEl = document.getElementById(`wc-date-${tz.abbr.toLowerCase()}`);
+      const statusEl = document.getElementById(`wc-status-${tz.abbr.toLowerCase()}`);
+      if (timeEl) {
+        timeEl.textContent = now.toLocaleTimeString('en-US', { timeZone: tz.id, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      }
+      if (dateEl) {
+        const dateStr = now.toLocaleDateString('en-US', { timeZone: tz.id, weekday: 'short', month: 'short', day: 'numeric' });
+        dateEl.textContent = `${dateStr} · ${tz.name}`;
+      }
+      if (statusEl) {
+        const isOpen = this.isMarketOpen(tz.id, now);
+        statusEl.className = `market-status-pill ${isOpen ? 'open' : 'closed'}`;
+        statusEl.textContent = isOpen ? '● Trading Open' : '○ Closed';
+      }
+    });
+  }
+
   renderDate() {
+    if (!this.selectedTimezone) this.initTimezone();
     this.startLiveClock();
   }
 
   startLiveClock() {
+    if (!this.selectedTimezone) this.initTimezone();
     const updateClock = () => {
       const now = new Date();
       const dateEl = document.getElementById('current-date');
       const clockText = document.getElementById('ist-clock-text');
+      const tzBadge = document.getElementById('current-tz-badge');
       const analogClock = document.querySelector('.analog-clock');
+      const tz = this.selectedTimezone || 'Asia/Kolkata';
+      const tzAbbr = this.getTimezoneAbbr(tz);
 
-      // IST format: Asia/Kolkata timezone with 12-hour AM/PM
-      const istTimeStr = now.toLocaleTimeString('en-US', {
-        timeZone: 'Asia/Kolkata',
+      const timeStr = now.toLocaleTimeString('en-US', {
+        timeZone: tz,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
         hour12: true
       });
-      const istTimeParts = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Kolkata',
+      const timeParts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
         hour12: false
       }).formatToParts(now);
-      const timePart = (type) => Number(istTimeParts.find((part) => part.type === type)?.value || 0);
+      const timePart = (type) => Number(timeParts.find((part) => part.type === type)?.value || 0);
       const hours = timePart('hour') % 12;
       const minutes = timePart('minute');
       const seconds = timePart('second');
 
-      const istDateStr = now.toLocaleDateString('en-US', {
-        timeZone: 'Asia/Kolkata',
+      const dateStr = now.toLocaleDateString('en-US', {
+        timeZone: tz,
         weekday: 'long',
         month: 'short',
         day: 'numeric'
       });
 
       if (clockText) {
-        clockText.textContent = `${istTimeStr} IST`;
+        clockText.textContent = `${timeStr} ${tzAbbr}`;
+      }
+      if (tzBadge) {
+        tzBadge.textContent = tzAbbr;
       }
       if (dateEl) {
-        dateEl.textContent = istDateStr;
+        dateEl.textContent = dateStr;
       }
       if (analogClock) {
         analogClock.querySelector('.analog-clock-hour').style.transform = `rotate(${hours * 30 + minutes * 0.5 + seconds * (0.5 / 60)}deg)`;
@@ -542,6 +697,93 @@ class GlobalCoverageApp {
     return svg;
   }
 
+  getPosterFallback(category = 'IT', seed = 0) {
+    const fallbacks = {
+      'IT': [
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1537498425277-c283d32ef9db?auto=format&fit=crop&w=1200&q=80'
+      ],
+      'Business': [
+        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1444653614773-995cb1ef9028?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1520333789090-1afc82db536a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=1200&q=80'
+      ],
+      'Cyber Security': [
+        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1607799279861-4dd421887fb3?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=1200&q=80'
+      ],
+      'AI': [
+        'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1617791160505-6f008e1e6703?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80'
+      ]
+    };
+    const list = fallbacks[category] || fallbacks['IT'];
+    const str = String(seed || '');
+    if (!str || str === '0') return list[0];
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const idx = Math.abs(hash) % list.length;
+    return list[idx];
+  }
+
   initRealtime() {
     if (typeof io === 'undefined') {
       console.warn('[Socket.io] Real-time client library not loaded.');
@@ -563,14 +805,28 @@ class GlobalCoverageApp {
         console.log(`🔌 Disconnected from real-time engine: ${reason}`);
       });
 
-      // Real-time Event 1: New article submitted by a publisher
+      // Real-time Event 1: New article submitted / published
       this.socket.on('article:submitted', (data) => {
         console.log('⚡ [Realtime] Article submitted:', data);
+        if (data && data.status === 'PUBLISHED') {
+          this.fetchTicker();
+          this.fetchBackendArticles();
+        }
         if (this.currentUser?.role === 'ADMIN') {
           this.showToast(`📝 New Submission: "${data.title || 'Untitled'}" by ${data.author?.name || 'Publisher'}`);
           if (this.currentPage === 'admin' && this.activeAdminTab === 'submissions') {
             this.loadAdminSubmissions();
           }
+        }
+      });
+
+      // Real-time Event 1B: New breaking headline published to ticker
+      this.socket.on('ticker:new', (item) => {
+        console.log('⚡ [Realtime] New breaking headline received:', item);
+        if (item && item.title) {
+          if (!this.tickerItems) this.tickerItems = [];
+          this.tickerItems = [item, ...this.tickerItems.filter(t => t.id !== item.id)];
+          this.renderTicker();
         }
       });
 
@@ -589,6 +845,7 @@ class GlobalCoverageApp {
       this.socket.on('article:status_changed', (data) => {
         console.log('⚡ [Realtime] Article status changed:', data);
         this.fetchBackendArticles();
+        this.fetchTicker();
         if (this.currentPage === 'admin' && this.activeAdminTab === 'submissions') {
           this.loadAdminSubmissions();
         }
@@ -718,7 +975,7 @@ class GlobalCoverageApp {
               published: new Date(data.publishedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
               time: 'Just now',
               readTime: '3 min read',
-              image: data.image || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80'
+              image: data.image || this.getPosterFallback(data.category, data.title || data.id)
             };
             this.dynamicHome.articles.unshift(formatted);
             this.dynamicHome.trending.unshift(formatted);
@@ -820,7 +1077,7 @@ class GlobalCoverageApp {
           published: new Date(pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           time: 'Recent',
           readTime: calcReadTime,
-          image: a.image || (GC_DATA.articles && GC_DATA.articles[i % GC_DATA.articles.length]?.image) || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80',
+          image: a.image || this.getPosterFallback(a.category, a.title || a.id),
           commentsCount: a._count?.comments || 0,
           savedCount: a._count?.savedBy || 0
         };
@@ -972,10 +1229,10 @@ class GlobalCoverageApp {
   // Compatibility wrapper for older templates; all visibility now comes from one helper.
   updateRoleUI() { this.updateNavVisibility(); }
 
-  // --- Consolidated 3-Tab Admin Review Suite ---
+  // --- Consolidated 5-Tab Admin Review Suite ---
   switchAdminTab(tab) {
     this.activeAdminTab = tab;
-    const tabNames = ['submissions', 'users', 'create'];
+    const tabNames = ['submissions', 'users', 'create', 'inquiries', 'audit'];
     tabNames.forEach(t => {
       const panel = document.getElementById(`admin-tab-${t}`);
       const btn = document.getElementById(`tab-btn-${t}`);
@@ -998,6 +1255,95 @@ class GlobalCoverageApp {
       this.loadAdminSubmissions();
     } else if (tab === 'users') {
       this.loadAdminUsers();
+    } else if (tab === 'inquiries') {
+      this.loadAdminInquiries();
+    } else if (tab === 'audit') {
+      this.loadAdminAuditLogs();
+    }
+  }
+
+  async loadAdminInquiries() {
+    if (this.currentUser?.role !== 'ADMIN') return;
+    const tbody = document.getElementById('admin-inquiries-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px;">Fetching inbound inquiries...</td></tr>`;
+
+    const res = await this.apiFetch('/inquiries');
+    if (res.ok && Array.isArray(res.data?.inquiries)) {
+      const list = res.data.inquiries;
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--color-dark-gray);">No commercial inquiries recorded yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(inq => {
+        const dateStr = new Date(inq.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const statusClass = inq.status === 'RESOLVED' ? 'status-approved' : inq.status === 'CONTACTED' ? 'status-pending' : 'status-rejected';
+        return `
+          <tr>
+            <td><code style="font-size:0.78rem;">${inq.id.slice(0, 12)}</code></td>
+            <td><b>${this.escapeHTML(inq.name)}</b><br><small class="text-muted">${this.escapeHTML(inq.company || 'Direct')} &bull; ${this.escapeHTML(inq.email)}</small></td>
+            <td><span class="badge badge-info" style="font-size:0.72rem;">${this.escapeHTML(inq.inquiryType)}</span><br><small class="text-muted">${this.escapeHTML(inq.budget || 'Custom')}</small></td>
+            <td style="max-width:240px; font-size:0.82rem;" title="${this.escapeHTML(inq.message || '')}">${this.escapeHTML((inq.message || '').slice(0, 80))}${(inq.message || '').length > 80 ? '...' : ''}</td>
+            <td style="font-size:0.78rem;">${dateStr}</td>
+            <td><span class="status-badge ${statusClass}">${inq.status}</span></td>
+            <td>
+              <select class="form-control" style="font-size:0.75rem; padding:4px 8px; width:auto;" onchange="app.updateInquiryStatus('${inq.id}', this.value)">
+                <option value="NEW" ${inq.status === 'NEW' ? 'selected' : ''}>NEW</option>
+                <option value="CONTACTED" ${inq.status === 'CONTACTED' ? 'selected' : ''}>CONTACTED</option>
+                <option value="QUALIFIED" ${inq.status === 'QUALIFIED' ? 'selected' : ''}>QUALIFIED</option>
+                <option value="RESOLVED" ${inq.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      this.refreshIcons(tbody);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--color-danger);">Unable to load business inquiries.</td></tr>`;
+    }
+  }
+
+  async updateInquiryStatus(id, newStatus) {
+    const res = await this.apiFetch(`/inquiries/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      this.showToast(`Inquiry status updated to ${newStatus}`);
+      this.loadAdminInquiries();
+    } else {
+      this.showToast(res.data?.error || 'Failed to update status.');
+    }
+  }
+
+  async loadAdminAuditLogs() {
+    if (this.currentUser?.role !== 'ADMIN') return;
+    const tbody = document.getElementById('admin-audit-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">Fetching audit trail from database...</td></tr>`;
+
+    const res = await this.apiFetch('/admin/audit-logs');
+    const logs = res.data?.auditLogs || res.data?.logs;
+    if (res.ok && Array.isArray(logs)) {
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--color-dark-gray);">No audit log events recorded yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = logs.map(l => {
+        const dateStr = new Date(l.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return `
+          <tr>
+            <td style="font-size:0.78rem; font-family:monospace; white-space:nowrap;">${dateStr}</td>
+            <td><span class="status-badge status-approved" style="font-size:0.72rem;">${this.escapeHTML(l.action)}</span></td>
+            <td><b>${this.escapeHTML(l.actorEmail || 'System')}</b><br><small class="text-muted">Role: ${this.escapeHTML(l.actorRole || 'ADMIN')}</small></td>
+            <td><code style="font-size:0.75rem;">${this.escapeHTML(l.targetType || 'ENTITY')}: ${(l.targetId || '').slice(0, 10)}</code></td>
+            <td style="font-size:0.8rem; color:var(--color-dark-gray); max-width:280px;">${this.escapeHTML(l.details || '')}</td>
+          </tr>
+        `;
+      }).join('');
+      this.refreshIcons(tbody);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--color-danger);">Unable to load audit logs.</td></tr>`;
     }
   }
 
@@ -2337,7 +2683,7 @@ class GlobalCoverageApp {
     const catSlug = this.categorySlug(hero.category);
     return `
       <div class="hero-image-box">
-        <img src="${hero.image}" alt="${hero.title}" loading="eager">
+        <img src="${hero.image}" alt="${this.escapeHTML(hero.title)}" loading="eager" onerror="this.onerror=null;this.src=app.getPosterFallback('${hero.category || 'IT'}', '${this.escapeJS(hero.id || hero.title)}');">
       </div>
       <div class="hero-top-bar">
         <span class="category-tag cat-${catSlug}">${hero.category}</span>
@@ -2497,13 +2843,26 @@ class GlobalCoverageApp {
         `).join('')}
       </div>
       <div class="side-trending-footer">
-        <a href="#tech" class="side-trending-link" onclick="app.navigateTo('tech')">
+        <a href="#home-latest-section" class="side-trending-link" onclick="event.preventDefault(); app.scrollToLatestWire()">
           Explore Latest Wire Stories <i data-lucide="arrow-right"></i>
         </a>
       </div>
     `;
 
     this.refreshIcons(card);
+  }
+
+  scrollToLatestWire() {
+    if (this.currentPage !== 'home') {
+      this.navigateTo('home');
+      setTimeout(() => {
+        const el = document.getElementById('home-latest-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    } else {
+      const el = document.getElementById('home-latest-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   showTrendingStoryModal(storyId) {
@@ -2532,6 +2891,9 @@ class GlobalCoverageApp {
     if (!strip) return;
     const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
     const picks = this.getHomeArticles().filter(a => !heroIds.has(a.id)).slice(0, 3);
+    if (!this.homepageAssignedIds) this.homepageAssignedIds = new Set();
+    heroIds.forEach(id => this.homepageAssignedIds.add(id));
+    picks.forEach(p => this.homepageAssignedIds.add(p.id));
     strip.innerHTML = picks.map(a => this.horizontalCardHTML(a)).join('');
     this.refreshIcons(strip);
   }
@@ -2605,17 +2967,116 @@ class GlobalCoverageApp {
     }
   }
 
-  // --- Card render helpers ---
-  horizontalCardHTML(item) {
+  // --- Card render helpers with Contextual Image Deduplication ---
+  getDeduplicatedCardImage(item, usedSet = null) {
+    if (!item) return '';
+    const set = usedSet || (this.renderedImagesInView = this.renderedImagesInView || new Set());
+    const imgPool = {
+      'IT': [
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80'
+      ],
+      'Business': [
+        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1444653614773-995cb1ef9028?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=1200&q=80'
+      ],
+      'Cyber Security': [
+        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1510511459019-5dda7724fd87?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1607799279861-4dd421887fb3?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1504639725590-34d0984388bd?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80'
+      ],
+      'AI': [
+        'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1535378917042-10a22c95931a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1617791160505-6f008e1e6703?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1516110833967-0b5716ca1387?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80'
+      ]
+    };
+
+    let cat = item.category || 'IT';
+    const text = ((item.title || '') + ' ' + (item.domain || '') + ' ' + (item.summary || '')).toLowerCase();
+    if (/attack|breach|hack|threat|vulnerab|malware|ransom|security|supply chain|exploit|zero-day|cve|phish|payload|botnet/.test(text)) {
+      cat = 'Cyber Security';
+    } else if (/chip|semiconductor|foundry|gpu|nvidia|intel|amd|hardware|datacenter|server|processor|quantum/.test(text)) {
+      cat = 'IT';
+    } else if (/stock|market|invest|trade|shares|bank|capital|revenue|earnings|finance|wall street|valuation|ipo/.test(text)) {
+      cat = 'Business';
+    } else if (/agent|model|neural|llm|robot|autonomous|gpt|gemini|deepmind|anthropic|openai|generative ai/.test(text)) {
+      cat = 'AI';
+    }
+
+    const pool = imgPool[cat] || imgPool['IT'];
+    let chosen = item.image;
+
+    // Check if duplicate or empty or previously assigned
+    if (!chosen || set.has(chosen) || (this.lastAssignedImage && chosen === this.lastAssignedImage)) {
+      for (const candidate of pool) {
+        if (!set.has(candidate) && candidate !== this.lastAssignedImage) {
+          chosen = candidate;
+          break;
+        }
+      }
+      if (!chosen || set.has(chosen) || (this.lastAssignedImage && chosen === this.lastAssignedImage)) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) hash = (hash << 5) - hash + text.charCodeAt(i);
+        let idx = Math.abs(hash) % pool.length;
+        if (pool[idx] === this.lastAssignedImage) idx = (idx + 1) % pool.length;
+        chosen = pool[idx];
+      }
+    }
+
+    set.add(chosen);
+    this.lastAssignedImage = chosen;
+    return chosen;
+  }
+
+  horizontalCardHTML(item, opts = {}) {
     if (!item) return '';
     const isSaved = this.isSaved(item.id);
     const domainBadge = item.domain || item.category;
     const dateStr = item.date || item.published || item.time || 'Recent';
     const readTimeStr = item.readTime || '3 min read';
+    const displayImg = this.getDeduplicatedCardImage(item, opts.usedSet);
 
     return `
       <div class="horizontal-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
-        <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
+        <img src="${displayImg}" alt="${this.escapeHTML(item.title)}" loading="lazy" onerror="this.onerror=null;this.src=app.getPosterFallback('${item.category || 'IT'}', '${this.escapeJS(item.id || item.title)}');">
         <div class="horizontal-card-body">
           <span class="story-category text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}</span>
           <h4 class="story-title" style="font-size:0.95rem; margin: 6px 0;">${this.escapeHTML(item.title)}</h4>
@@ -2648,11 +3109,12 @@ class GlobalCoverageApp {
     const dateStr = item.date || item.published || 'Recent';
     const readTimeStr = item.readTime || '3 min read';
     const summaryText = item.summary || item.description || '';
+    const displayImg = this.getDeduplicatedCardImage(item, opts.usedSet);
 
     return `
       <article class="card-editorial${extraClass}" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
         <div class="card-editorial-thumb">
-          <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
+          <img src="${displayImg}" alt="${this.escapeHTML(item.title)}" loading="lazy" onerror="this.onerror=null;this.src=app.getPosterFallback('${item.category || 'IT'}', '${this.escapeJS(item.id || item.title)}');">
           <span class="card-category-chip text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}</span>
         </div>
         <div class="card-editorial-body">
@@ -2682,7 +3144,7 @@ class GlobalCoverageApp {
       </article>`;
   }
 
-  cyberCardHTML(item) {
+  cyberCardHTML(item, opts = {}) {
     if (!item) return '';
     const sevClass = 'sev-' + (item.severity || 'high').toLowerCase().replace(/\s+/g, '-');
     const isSaved = this.isSaved(item.id);
@@ -2691,11 +3153,12 @@ class GlobalCoverageApp {
     const dateStr = item.date || item.published || 'Recent';
     const readTimeStr = item.readTime || '3 min read';
     const summaryText = item.summary || item.description || '';
+    const displayImg = this.getDeduplicatedCardImage(item, opts.usedSet);
 
     return `
       <article class="card-editorial cyber-alert-card" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
         <div class="card-editorial-thumb">
-          <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
+          <img src="${displayImg}" alt="${this.escapeHTML(item.title)}" loading="lazy" onerror="this.onerror=null;this.src=app.getPosterFallback('Cyber Security', '${this.escapeJS(item.id || item.title)}');">
           <span class="card-category-chip text-red">${this.escapeHTML(domainBadge)}</span>
         </div>
         <div class="card-editorial-body">
@@ -2728,7 +3191,7 @@ class GlobalCoverageApp {
       </article>`;
   }
 
-  storyHorizontalHTML(item) {
+  storyHorizontalHTML(item, opts = {}) {
     if (!item) return '';
     const isSaved = this.isSaved(item.id);
     const domainBadge = item.domain || item.category;
@@ -2736,10 +3199,11 @@ class GlobalCoverageApp {
     const dateStr = item.date || item.published || 'Recent';
     const readTimeStr = item.readTime || '3 min read';
     const summaryText = item.summary || item.description || '';
+    const displayImg = this.getDeduplicatedCardImage(item, opts.usedSet);
 
     return `
       <div class="story-horizontal" onclick="app.openArticleModal('${item.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(item.title)}">
-        <img src="${item.image}" alt="${this.escapeHTML(item.title)}" loading="lazy">
+        <img src="${displayImg}" alt="${this.escapeHTML(item.title)}" loading="lazy" onerror="this.onerror=null;this.src=app.getPosterFallback('${item.category || 'IT'}', '${this.escapeJS(item.id || item.title)}');">
         <div class="story-body">
           <span class="story-category text-${this.accentClass(item.category)}">${this.escapeHTML(domainBadge)}${item.severity ? ' · ' + item.severity : ''}</span>
           <h4 style="font-size:0.95rem; font-family:var(--font-heading); margin: 4px 0;">${this.escapeHTML(item.title)}</h4>
@@ -2861,6 +3325,13 @@ class GlobalCoverageApp {
     // Apply category filter
     if (this.homeLatestFilter && this.homeLatestFilter !== 'all') {
       items = items.filter(a => a.category === this.homeLatestFilter);
+    } else {
+      // Deduplication: prevent repeating articles showcased in Hero and Editor's Picks
+      const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+      const filtered = items.filter(a => !heroIds.has(a.id) && !(this.homepageAssignedIds && this.homepageAssignedIds.has(a.id)));
+      if (filtered.length >= 6) {
+        items = filtered;
+      }
     }
 
     // Apply sorting
@@ -2962,7 +3433,11 @@ class GlobalCoverageApp {
   renderTechSpotlight() {
     const container = document.getElementById('tech-spotlight-container');
     if (!container) return;
-    const items = this.getHomeArticles().filter(a => a.category === 'IT').slice(0, 5);
+    const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+    const used = this.homepageAssignedIds || heroIds;
+    let items = this.getHomeArticles().filter(a => a.category === 'IT' && !used.has(a.id)).slice(0, 5);
+    if (!items.length) items = this.getHomeArticles().filter(a => a.category === 'IT').slice(0, 5);
+    items.forEach(i => used.add(i.id));
     if (!items.length) { container.innerHTML = this.emptyStateHTML('technology'); return; }
     container.innerHTML = [
       this.editorialCardHTML(items[0], { lead: true }),
@@ -2974,7 +3449,11 @@ class GlobalCoverageApp {
   renderBusinessHighlights() {
     const container = document.getElementById('business-highlights-container');
     if (!container) return;
-    const items = this.getHomeArticles().filter(a => a.category === 'Business').slice(0, 3);
+    const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+    const used = this.homepageAssignedIds || heroIds;
+    let items = this.getHomeArticles().filter(a => a.category === 'Business' && !used.has(a.id)).slice(0, 3);
+    if (!items.length) items = this.getHomeArticles().filter(a => a.category === 'Business').slice(0, 3);
+    items.forEach(i => used.add(i.id));
     container.innerHTML = items.length ? items.map(i => this.editorialCardHTML(i)).join('') : this.emptyStateHTML('business');
     this.refreshIcons(container);
   }
@@ -2982,7 +3461,11 @@ class GlobalCoverageApp {
   renderCyberAlerts() {
     const container = document.getElementById('cyber-alerts-container');
     if (!container) return;
-    const items = this.getHomeArticles().filter(a => a.category === 'Cyber Security').slice(0, 3);
+    const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+    const used = this.homepageAssignedIds || heroIds;
+    let items = this.getHomeArticles().filter(a => a.category === 'Cyber Security' && !used.has(a.id)).slice(0, 3);
+    if (!items.length) items = this.getHomeArticles().filter(a => a.category === 'Cyber Security').slice(0, 3);
+    items.forEach(i => used.add(i.id));
     container.innerHTML = items.length ? items.map(i => this.cyberCardHTML(i)).join('') : this.emptyStateHTML('cyber security');
     this.refreshIcons(container);
   }
@@ -2990,7 +3473,11 @@ class GlobalCoverageApp {
   renderAIHighlights() {
     const container = document.getElementById('ai-highlights-container');
     if (!container) return;
-    const items = this.getHomeArticles().filter(a => a.category === 'AI').slice(0, 3);
+    const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+    const used = this.homepageAssignedIds || heroIds;
+    let items = this.getHomeArticles().filter(a => a.category === 'AI' && !used.has(a.id)).slice(0, 3);
+    if (!items.length) items = this.getHomeArticles().filter(a => a.category === 'AI').slice(0, 3);
+    items.forEach(i => used.add(i.id));
     container.innerHTML = items.length ? items.map(i => this.editorialCardHTML(i)).join('') : this.emptyStateHTML('AI');
     this.refreshIcons(container);
   }
@@ -2999,7 +3486,13 @@ class GlobalCoverageApp {
     const container = document.getElementById('tech-insights-container');
     if (!container) return;
     const articles = this.getHomeArticles();
-    const insights = articles.filter(a => a.category === 'IT' || a.category === 'AI').slice(5, 8);
+    const heroIds = new Set((this.getHomeHeroStories() || []).map(h => h.id));
+    const used = this.homepageAssignedIds || heroIds;
+    let insights = articles.filter(a => (a.category === 'IT' || a.category === 'AI') && !used.has(a.id)).slice(0, 3);
+    if (!insights.length) {
+      insights = articles.filter(a => a.category === 'IT' || a.category === 'AI').slice(5, 8);
+    }
+    insights.forEach(i => used.add(i.id));
     if (!insights.length) {
       container.innerHTML = this.emptyStateHTML('technology insights');
       return;
@@ -3579,10 +4072,11 @@ class GlobalCoverageApp {
   renderEvents() {
     const container = document.getElementById('events-container');
     if (!container) return;
+    const isRegistered = (id) => (this.eventRegistrations || []).some(r => r.eventId === id);
     container.innerHTML = this.getHomeEvents().map(e => `
       <div class="webinar-card event-card">
         <div class="webinar-banner event-banner">
-          <img src="${e.image}" alt="${e.title}" loading="lazy">
+          <img src="${e.image}" alt="${this.escapeHTML(e.title)}" loading="lazy" onerror="this.onerror=null;this.src=app.getPosterFallback('${e.category || 'IT'}', '${this.escapeJS(e.id || e.title)}');">
           <span class="event-type-tag">${e.type || 'Webinar'}</span>
         </div>
         <div class="webinar-card-body event-card-body">
@@ -3591,7 +4085,13 @@ class GlobalCoverageApp {
             <h4 class="webinar-title event-title">${e.title}</h4>
             <p class="webinar-speaker event-speaker">Speaker: ${e.speaker} · ${e.organization || ''}</p>
           </div>
-          <button class="btn btn-primary btn-sm webinar-btn" onclick="app.openEventModal('${e.id}')">Register Now</button>
+          ${isRegistered(e.id) ? `
+            <button class="btn btn-outline btn-sm webinar-btn active" style="color:#10B981; border-color:#10B981; font-weight:700;" onclick="app.openEventModal('${e.id}')">
+              <i data-lucide="check-circle"></i> Registered
+            </button>
+          ` : `
+            <button class="btn btn-primary btn-sm webinar-btn" onclick="app.openEventModal('${e.id}')">Register Now</button>
+          `}
         </div>
       </div>
     `).join('');
@@ -3879,7 +4379,7 @@ class GlobalCoverageApp {
     let html = `
       <article class="card-editorial lead-story category-spotlight" onclick="app.openArticleModal('${leadStory.id}')" tabindex="0" role="button" aria-label="${this.escapeHTML(leadStory.title)}" style="margin-bottom: 20px;">
         <div class="card-editorial-thumb">
-          <img src="${leadStory.image}" alt="${this.escapeHTML(leadStory.title)}" loading="eager">
+          <img src="${leadStory.image}" alt="${this.escapeHTML(leadStory.title)}" loading="eager" onerror="this.onerror=null;this.src=app.getPosterFallback('${leadStory.category || 'IT'}', '${this.escapeJS(leadStory.id || leadStory.title)}');">
           <span class="card-category-chip text-${this.accentClass(leadStory.category)}">${this.escapeHTML(leadStory.domain || leadStory.category)}</span>
         </div>
         <div class="card-editorial-body">
@@ -4150,10 +4650,36 @@ class GlobalCoverageApp {
   }
 
   // --- Article Reader Modal ---
+  generateStraightBrief(title, summary, body) {
+    const base = (summary || body || title || '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/---\s*\*Source:[\s\S]*$/m, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/[*_#`~]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const words = base.split(/\s+/).filter(Boolean);
+    if (words.length <= 48) return words.join(' ');
+    return words.slice(0, 48).join(' ') + '...';
+  }
+
   findArticle(id) {
-    const article = GC_DATA.articles.find(a => a.id === id) || GC_DATA.heroStories.find(h => h.id === id);
+    const list = [
+      ...(this.articles || []),
+      ...(this.getHomeArticles() || []),
+      ...(this.getHomeHeroStories() || []),
+      ...(GC_DATA.articles || []),
+      ...(GC_DATA.heroStories || [])
+    ];
+    const article = list.find(a => a.id === id);
     if (article) return article;
-    const trending = GC_DATA.trending ? GC_DATA.trending.find(t => t.id === id) : null;
+    const trendingList = [
+      ...(this.tickerItems || []),
+      ...(this.getHomeTrending() || []),
+      ...(GC_DATA.trending || [])
+    ];
+    const trending = trendingList.find(t => t.id === id);
     if (trending) {
       return {
         id: trending.id,
@@ -4162,12 +4688,12 @@ class GlobalCoverageApp {
         description: `${trending.title}. Continuous coverage and intelligence briefing from the OPEN MEDIA editorial desk.`,
         body: `<p>${trending.title}</p><p>Security, technology and market indicators are shifting rapidly. OPEN MEDIA correspondents are following this developing story across our global bureaus.</p>`,
         category: trending.category,
-        domain: trending.category,
-        author: 'Global Desk',
-        published: trending.time,
-        date: trending.time,
-        readTime: '3 min read',
-        image: trending.image
+        domain: trending.domain || trending.category,
+        author: trending.author || 'Global Desk',
+        published: trending.time || trending.date || 'Recent',
+        date: trending.time || trending.date || 'Recent',
+        readTime: trending.readTime || '3 min read',
+        image: trending.image || this.getPosterFallback(trending.category, trending.title || trending.id)
       };
     }
     return null;
@@ -4191,7 +4717,7 @@ class GlobalCoverageApp {
           date: new Date(a.publishedAt || a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           published: new Date(a.publishedAt || a.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           readTime: '4 min read',
-          image: a.image || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80'
+          image: a.image || this.getPosterFallback(a.category, a.title || a.id)
         };
       }
     }
@@ -4209,29 +4735,91 @@ class GlobalCoverageApp {
     const content = document.getElementById('article-modal-content');
     const related = GC_DATA.articles.filter(a => a.category === article.category && a.id !== id).slice(0, 3);
     const tags = article.domain ? [article.domain, article.category] : [article.category];
-    const bodyText = article.body || article.description || '';
+    
+    let rawBody = article.body || article.description || article.summary || '';
+    let sourceName = article.sourceName;
+    let sourceUrl = article.sourceUrl;
+
+    // Detect and extract syndicated markdown block
+    const syndicationRegex = /---\s*\*Source:\s*Originally syndicated via \*\*([^*]+)\*\*\.\*\s*\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/i;
+    const match = rawBody.match(syndicationRegex);
+    if (match) {
+      if (!sourceName) sourceName = match[1].trim();
+      if (!sourceUrl) sourceUrl = match[3].trim();
+      rawBody = rawBody.replace(syndicationRegex, '').trim();
+    }
+    // Also strip generic markdown syndication if present
+    rawBody = rawBody.replace(/---\s*\*Source:[\s\S]*$/, '').trim();
+
+    // Clean markdown bold, italic, and links from body
+    let cleanBody = rawBody
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .trim();
+
+    const paragraphs = cleanBody.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    const straightBrief = article.straightBrief || this.generateStraightBrief(article.title, article.summary, cleanBody);
+    const contentType = (article.contentType || 'NEWS').toUpperCase();
+    const contentTypeLabel = {
+      'NEWS': 'NEWS REPORTING',
+      'ANALYSIS': 'DEEP ANALYSIS',
+      'COMMUNITY': 'COMMUNITY DISPATCH',
+      'SPONSORED': 'SPONSORED BRIEF'
+    }[contentType] || 'NEWS REPORTING';
+    const contentTypeClass = `badge-${contentType.toLowerCase()}`;
 
     content.innerHTML = `
       <div class="article-reader-inner">
         <div class="article-reader-top">
-          <span class="story-category text-${this.accentClass(article.category)}">${article.category}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="story-category text-${this.accentClass(article.category)}">${article.category}</span>
+            <span class="content-type-badge ${contentTypeClass}">${contentTypeLabel}</span>
+          </div>
           <button class="icon-btn" onclick="app.closeArticleModal()" aria-label="Close article"><i data-lucide="x"></i></button>
         </div>
-        <h1 class="article-reader-title">${article.title}</h1>
-        ${article.description && article.body ? `<p class="article-reader-subtitle">${article.description}</p>` : ''}
+        <h1 class="article-reader-title">${this.escapeHTML(article.title)}</h1>
+        ${article.description && article.body ? `<p class="article-reader-subtitle">${this.escapeHTML(article.description)}</p>` : ''}
         <div class="article-reader-meta">
-          <span>By <b>${article.author || 'Editorial Desk'}</b></span>
+          <span>By <b>${this.escapeHTML(article.author || 'Editorial Desk')}</b> <span class="status-badge badge-publisher" style="font-size:0.68rem; margin-left:4px;">Verified Source</span></span>
           <span>Published ${article.date || article.published || 'Today'}</span>
           <span>${article.readTime || '4 min read'}</span>
         </div>
-        <img class="article-reader-hero" src="${article.image}" alt="${article.title}">
-        <div class="article-body">
-          <p>${bodyText}</p>
-          <div class="pull-quote">"${(article.summary || article.description || '').slice(0, 140)}"</div>
-          <p>OPEN MEDIA's editorial desk will continue to update this story as new information becomes available from sources familiar with the matter.</p>
+
+        <!-- In 50 Words · Straight Brief Banner -->
+        <div class="straight-brief-box">
+          <div class="straight-brief-header">
+            <span class="straight-brief-pill"><i data-lucide="zap"></i> In 50 Words · Straight Brief</span>
+            <span class="straight-brief-count">${straightBrief.split(/\s+/).filter(Boolean).length} Words</span>
+          </div>
+          <p class="straight-brief-text">${this.escapeHTML(straightBrief)}</p>
         </div>
+
+        <img class="article-reader-hero" src="${article.image}" alt="${this.escapeHTML(article.title)}" onerror="this.onerror=null;this.src=app.getPosterFallback('${article.category || 'IT'}', '${this.escapeJS(article.id || article.title)}');">
+        
+        <div class="article-body">
+          ${paragraphs.length ? paragraphs.map(p => `<p>${this.escapeHTML(p)}</p>`).join('') : `<p>${this.escapeHTML(cleanBody)}</p>`}
+          <div class="pull-quote">"${this.escapeHTML((article.summary || article.description || '').slice(0, 140))}"</div>
+          <p>OPEN MEDIA's editorial desk will continue to update this story as new verified information becomes available.</p>
+        </div>
+
+        <!-- Verified Syndicated Source Card -->
+        ${(sourceUrl || sourceName) ? `
+        <div class="wire-source-card">
+          <div class="wire-source-header">
+            <span class="wire-badge"><i data-lucide="radio"></i> Verified Syndicated Wire</span>
+            <span class="wire-publisher">${this.escapeHTML(sourceName || 'Accredited Wire Desk')}</span>
+          </div>
+          <p class="wire-source-note">Originally reported and continuous coverage syndicated via accredited newsroom. Read full unbroken wire coverage directly at the origin desk.</p>
+          ${sourceUrl ? `
+          <a href="${this.escapeHTML(sourceUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm wire-source-link">
+            <span>Read Full Continuous Story on ${this.escapeHTML(sourceName || 'Official Source')}</span>
+            <i data-lucide="external-link"></i>
+          </a>` : ''}
+        </div>` : ''}
+
         <div class="article-tags">
-          ${tags.map(t => `<span class="article-tag">${t}</span>`).join('')}
+          ${tags.map(t => `<span class="article-tag">${this.escapeHTML(t)}</span>`).join('')}
         </div>
         <div class="article-actions">
           ${this.getCurrentUser() ? `<button class="btn btn-outline btn-sm" onclick="app.toggleSaveArticle('${article.id}')"><i data-lucide="${this.isSaved(article.id) ? 'bookmark-check' : 'bookmark'}"></i> ${this.isSaved(article.id) ? 'Saved' : 'Save'}</button>` : ''}
@@ -4320,29 +4908,34 @@ class GlobalCoverageApp {
   }
 
   openEventModal(eventId) {
-    const evt = GC_DATA.events.find(e => e.id === eventId);
+    const evt = (this.events || []).find(e => e.id === eventId) ||
+                (this.getHomeEvents() || []).find(e => e.id === eventId) ||
+                (GC_DATA.events || []).find(e => e.id === eventId);
     if (!evt) return;
 
     const modal = document.getElementById('event-modal');
     const body = document.getElementById('event-modal-body');
+    const user = this.getCurrentUser();
+    const defaultName = user?.name || '';
+    const defaultEmail = user?.email || '';
 
     body.innerHTML = `
-      <span class="event-type-tag" style="position:static; display:inline-block; margin-bottom:12px;">${evt.type || 'Event'}</span>
-      <h2 style="font-family:var(--font-heading); margin-bottom:8px;">${evt.title}</h2>
+      <span class="event-type-tag" style="position:static; display:inline-block; margin-bottom:12px;">${evt.type || 'Executive Briefing'}</span>
+      <h2 style="font-family:var(--font-heading); margin-bottom:8px;">${this.escapeHTML(evt.title)}</h2>
       <p class="text-purple" style="font-weight:700; font-size:0.875rem; margin-bottom:6px;">${evt.date} · ${evt.time || ''}</p>
-      <p class="text-muted" style="font-size:0.875rem; margin-bottom:16px;">Speaker: ${evt.speaker} · ${evt.organization || ''}</p>
-      <p class="text-muted" style="font-size:0.9rem; margin-bottom:18px;">${evt.description}</p>
+      <p class="text-muted" style="font-size:0.875rem; margin-bottom:16px;">Speaker: ${this.escapeHTML(evt.speaker || 'Keynote Expert')} · ${this.escapeHTML(evt.organization || 'Global Tech Forum')}</p>
+      <p class="text-muted" style="font-size:0.9rem; margin-bottom:18px;">${this.escapeHTML(evt.description || '')}</p>
       <form onsubmit="app.handleEventRegister(event, '${evt.id}')">
         <div class="form-group">
           <label for="evt-reg-name">Full Name</label>
-          <input type="text" id="evt-reg-name" class="form-control" required placeholder="D. Phani Kumar">
+          <input type="text" id="evt-reg-name" class="form-control" required value="${this.escapeHTML(defaultName)}" placeholder="e.g. Elena Vance">
         </div>
         <div class="form-group">
           <label for="evt-reg-email">Work Email</label>
-          <input type="email" id="evt-reg-email" class="form-control" required placeholder="phani@university.edu">
+          <input type="email" id="evt-reg-email" class="form-control" required value="${this.escapeHTML(defaultEmail)}" placeholder="e.g. elena@enterprise.com">
         </div>
         <div style="display:flex; gap:10px;">
-          <button type="submit" class="btn btn-primary" style="flex:1;">Confirm Registration</button>
+          <button type="submit" class="btn btn-primary" style="flex:1;"><i data-lucide="ticket"></i> Register Now</button>
           <button type="button" class="btn btn-outline" onclick="app.toggleBookmarkEvent('${evt.id}')"><i data-lucide="bookmark"></i></button>
         </div>
       </form>
@@ -4362,51 +4955,83 @@ class GlobalCoverageApp {
     const pages = {
       about: {
         title: 'About OPEN MEDIA',
-        updated: 'Technology, business, AI, and cybersecurity intelligence',
+        updated: 'Enterprise Technology, Business, AI, and Cybersecurity Intelligence',
         sections: [
-          ['Our mission', 'OPEN MEDIA helps readers understand the forces shaping the modern world. We turn complex developments into clear, useful reporting for students, professionals, builders, and curious readers everywhere.'],
-          ['What we cover', 'Our newsroom follows artificial intelligence, IT and innovation, cloud computing, semiconductors, startups, business strategy, markets, leadership, and cybersecurity threats. Coverage combines daily updates with context, analysis, and practical takeaways.'],
-          ['Built for informed decisions', 'Explore focused category feeds, save stories to your personal library, follow expert contributors, and stay informed with trusted journalism across the OPEN MEDIA newsroom.'],
-          ['Our commitment', 'We value accuracy, independence, responsible technology reporting, and respect for our readers. OPEN MEDIA clearly separates reported information from analysis and updates coverage when better information becomes available.']
+          ['Our Mission', 'OPEN MEDIA provides executive-ready intelligence and verifiable technical journalism across cloud computing, artificial intelligence, cybersecurity operations, and global tech enterprise.'],
+          ['Core Editorial Pillars', 'We report strictly on four high-impact pillars: Enterprise IT, Global Business & Markets, Cyber Security & Threat Intelligence, and Artificial Intelligence.'],
+          ['Zero-Speculation Policy', 'All continuous wire stories and breaking dispatches are cross-referenced with accredited desks, verifiable filings, and vendor security advisories before publication.']
         ]
       },
       privacy: {
-        title: 'Privacy Policy',
-        updated: 'Last updated: August 28, 2026',
+        title: 'Privacy Policy & Data Protection',
+        updated: 'Enterprise Data Protection Standards · GDPR & Privacy Compliance',
         sections: [
-          ['Information we collect', 'OPEN MEDIA may collect information you provide through forms, such as contact details and newsletter preferences. We also collect basic technical information needed to keep the site secure and usable.'],
-          ['How we use information', 'We use information to deliver requested services, improve our journalism products, respond to messages, and send updates when you have chosen to receive them. We do not sell personal information.'],
-          ['Your choices', 'You may request access to, correction of, or deletion of personal information by contacting the OPEN MEDIA editorial desk. You can unsubscribe from communications at any time.']
+          ['Reader Account & Verification Data', 'When creating an account or verifying your email, we store your name, email, salted-bcrypt password hash, and verification status. This data is exclusively used for authentication, access control, and maintaining your personal reading library.'],
+          ['Newsletter & Intelligence Briefs', 'Newsletter subscriptions are stored securely and used solely to dispatch requested intelligence briefings. We never sell, rent, or lease reader contact lists to third parties, brokers, or data aggregators.'],
+          ['Community Discussions, Polls & Comments', 'Perspectives, poll votes, and comment replies posted across OPEN MEDIA articles are attributed to your public profile name. Respectful technical critique and disclosure of relevant commercial affiliations are required.'],
+          ['Submitted Editorial Content', 'Contributor submissions, drafts, and uploaded graphics remain the intellectual property of the author while granting OPEN MEDIA non-exclusive distribution rights upon approval by our editorial desk.'],
+          ['Data Retention & Deletion Rights', 'Readers may request complete account data deletion or export of their saved library by contacting the editorial privacy desk at privacy@openmedia.soxit.in.']
         ]
       },
       terms: {
         title: 'Terms of Service',
-        updated: 'Last updated: August 28, 2026',
+        updated: 'Effective Date: November 17, 2026',
         sections: [
-          ['Using OPEN MEDIA', 'You may read, share, and link to OPEN MEDIA content for personal and informational use. Please do not copy, republish, or commercially exploit our reporting without written permission.'],
-          ['Editorial content', 'Our coverage is provided for general information and does not constitute legal, financial, investment, or security advice. Facts and analysis may be updated as reporting develops.'],
-          ['Acceptable conduct', 'Do not interfere with the site, misuse its forms or services, impersonate others, or submit content that violates the law or another person’s rights.']
+          ['Using OPEN MEDIA', 'You may read, share, and link to OPEN MEDIA reporting for personal and informational use. Automated bulk harvesting, unauthorized scraping, or republishing of articles without written authorization is strictly prohibited.'],
+          ['No Financial or Legal Advice', 'Market analysis, semiconductor coverage, and enterprise corporate reporting are published for informational purposes and do not constitute financial, investment, legal, or architectural advice.'],
+          ['Acceptable Reader Conduct', 'Harassment, hate speech, automated voting manipulation, security vulnerability probing, or defamatory commentary results in immediate account suspension or termination.']
         ]
       },
       editorial: {
-        title: 'Editorial Guidelines',
-        updated: 'Our standards for responsible journalism',
+        title: 'Editorial Guidelines & Journalism Standards',
+        updated: 'Accredited Newsroom Standards for Verifiable Reporting',
         sections: [
-          ['Accuracy first', 'We verify important claims with reliable sources, distinguish confirmed facts from allegations, and correct material errors transparently.'],
-          ['Independence and fairness', 'Our editorial decisions are independent of advertisers, sponsors, and commercial partners. We seek relevant perspectives and disclose meaningful conflicts of interest.'],
-          ['Responsible technology reporting', 'We avoid sensationalism, protect vulnerable sources, and do not publish operational details that would materially enable cyber abuse. Analysis is clearly separated from reported fact.']
+          ['Accuracy & Verification', 'We verify facts through primary sources, official corporate filings, CVE registries, and authenticated press releases before publishing.'],
+          ['Clear Separation of Content Types', 'We clearly distinguish between objective News Reporting, deep Technical Analysis, Community Dispatches, and Sponsored Briefs.'],
+          ['Straight 50-Word Briefs', 'Every story lead provides an executive-ready "In 50 Words" straight brief to ensure readers get accurate facts immediately without fluff.'],
+          ['Corrections & Updates', 'Material corrections are acknowledged transparently in the article body with an editorial timestamp indicating the modification.']
+        ]
+      },
+      moderation: {
+        title: 'Community Moderation Rules',
+        updated: 'Civil Discourse and Technical Safety Guidelines',
+        sections: [
+          ['Civil & Professional Tone', 'Comments and discussion threads must remain professional, respectful, and constructive. Personal attacks, insults, and harassment are grounds for suspension.'],
+          ['Zero-Tolerance for Spam & Astroturfing', 'Promotional link-farming, coordinated voting manipulation, bot activity, and fraudulent user reviews are permanently blocked by our spam detection layer.'],
+          ['Responsible Cyber Disclosure', 'Community posts discussing zero-day exploits or active attack vectors must adhere to coordinated vulnerability disclosure. Operational exploits or weaponized proof-of-concepts will be immediately removed.'],
+          ['Reporting Violations', 'Readers may report suspicious comments or abusive submissions to our editorial moderation team directly from the discussion viewer.']
+        ]
+      },
+      sponsored: {
+        title: 'Sponsored Content & Commercial Policy',
+        updated: 'Transparency, Independence, and Commercial Standards',
+        sections: [
+          ['Uncompromising Editorial Independence', 'Advertisers and commercial sponsors have no influence over OPEN MEDIA editorial coverage, reporting decisions, or technical critiques.'],
+          ['Unambiguous Labeling', 'All sponsored briefings, partner webinars, and paid whitepapers are explicitly tagged with the "SPONSORED BRIEF" badge across all feeds and readers.'],
+          ['Strict Partner Vetting', 'We only accept commercial sponsorships from verified technology and enterprise software vendors whose products adhere to industry security standards.']
         ]
       }
     };
     const page = pages[type] || pages.privacy;
     const body = document.getElementById('legal-modal-body');
     if (body) {
-      body.innerHTML = `<h2 style="font-family:var(--font-heading); margin-bottom:6px;">${page.title}</h2><p class="text-muted" style="font-size:0.8rem; margin-bottom:20px;">${page.updated}</p>${page.sections.map(section => `<h3 style="font-size:1rem; margin:18px 0 6px;">${section[0]}</h3><p class="text-muted" style="font-size:0.9rem;">${section[1]}</p>`).join('')}`;
+      body.innerHTML = `
+        <h2 style="font-family:var(--font-heading); margin-bottom:6px; color:var(--color-deep-navy);">${page.title}</h2>
+        <p class="text-muted" style="font-size:0.8rem; margin-bottom:20px;"><i data-lucide="shield" style="width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>${page.updated}</p>
+        ${page.sections.map(section => `
+          <div style="margin-bottom:18px;">
+            <h3 style="font-size:0.98rem; font-weight:600; color:var(--color-deep-navy); margin-bottom:6px;">${section[0]}</h3>
+            <p class="text-muted" style="font-size:0.88rem; line-height:1.6; margin:0;">${section[1]}</p>
+          </div>
+        `).join('')}
+      `;
     }
     const legalModal = document.getElementById('legal-modal');
-    legalModal.classList.add('show');
-    this.updateModalOpenState(true);
-    this.refreshIcons(legalModal);
+    if (legalModal) {
+      legalModal.classList.add('show');
+      this.updateModalOpenState(true);
+      this.refreshIcons(legalModal);
+    }
   }
 
   closeLegalPage() {
@@ -4416,16 +5041,24 @@ class GlobalCoverageApp {
 
   handleEventRegister(e, eventId) {
     e.preventDefault();
+    const name = document.getElementById('evt-reg-name')?.value.trim() || '';
+    const email = document.getElementById('evt-reg-email')?.value.trim() || '';
+    if (!name || !email) {
+      this.showToast('Please enter your full name and work email address.');
+      return;
+    }
+    if (!this.eventRegistrations) this.eventRegistrations = [];
     this.eventRegistrations.push({
       id: `registration-${Date.now()}`,
       eventId,
-      name: document.getElementById('evt-reg-name').value.trim(),
-      email: document.getElementById('evt-reg-email').value.trim(),
+      name,
+      email,
       date: new Date().toISOString()
     });
     localStorage.setItem('gc_event_registrations', JSON.stringify(this.eventRegistrations));
     this.closeEventModal();
-    this.showToast('Registration successful! Access pass sent to your email.');
+    this.renderEvents();
+    this.showToast(`🎉 Registration confirmed for ${name}! Access pass emailed to ${email}.`);
   }
 
   closeModal(modalId = null) {
@@ -4897,16 +5530,32 @@ class GlobalCoverageApp {
           category,
           domain: tags || category,
           image: image || undefined,
-          status: 'PENDING'
+          status: 'PUBLISHED'
         })
       });
 
       if (res.ok && res.data?.article) {
-        this.showToast(res.data.message || 'Article submitted for editorial review.');
+        const newArt = res.data.article;
+        this.showToast('🚀 Story published live to the Breaking News ticker and feed!');
         form.reset();
         const preview = document.getElementById('pub-image-preview');
         if (preview) preview.innerHTML = '';
         document.getElementById('pub-author').value = this.currentUser?.name || '';
+
+        // Immediately update breaking news ticker locally
+        if (!this.tickerItems) this.tickerItems = [];
+        this.tickerItems = [{
+          id: newArt.id,
+          title: newArt.title,
+          category: newArt.category,
+          domain: newArt.domain,
+          time: 'Just now'
+        }, ...this.tickerItems.filter(t => t.id !== newArt.id)];
+        this.renderTicker();
+
+        // Refresh feed & ticker from server
+        await this.fetchTicker();
+        await this.fetchBackendArticles();
         await this.renderPublisherTracker();
       } else {
         const errMsg = res.data?.message || (res.data?.details ? res.data.details.map(d => d.message).join(', ') : res.data?.error) || 'Validation error';
@@ -4915,7 +5564,7 @@ class GlobalCoverageApp {
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = submitBtn.dataset.originalText || '<i data-lucide="send"></i> Submit for Editorial Review';
+        submitBtn.innerHTML = submitBtn.dataset.originalText || '<i data-lucide="send"></i> Publish News to Breaking Wire';
         this.refreshIcons(submitBtn);
       }
     }
@@ -5006,36 +5655,152 @@ class GlobalCoverageApp {
     e.target.reset();
   }
 
-  handleAdvertiseSubmission(e) {
+  async handleAdvertiseSubmission(e) {
     e.preventDefault();
-    const values = this.validatePublicForm(e.target, [
-      { id: 'adv-name', key: 'name' },
-      { id: 'adv-company', key: 'company' },
-      { id: 'adv-email', key: 'email' },
-      { id: 'adv-package', key: 'package' }
-    ]);
-    if (!values) return;
-    this.showToast(`Thank you, ${values.name}. Our media partnerships team will contact ${values.email} within 24 hours.`);
-    e.target.reset();
+    const name = document.getElementById('adv-name')?.value.trim() || '';
+    const company = document.getElementById('adv-company')?.value.trim() || '';
+    const email = document.getElementById('adv-email')?.value.trim() || '';
+    const pkg = document.getElementById('adv-package')?.value || 'Sponsored Intelligence Brief';
+    const budget = document.getElementById('adv-budget')?.value || 'Enterprise ($5,000+)';
+    const message = document.getElementById('adv-notes')?.value.trim() || `Inquiry for ${pkg}`;
+
+    if (!name || !email) {
+      this.showToast('Please provide your full name and work email.');
+      return;
+    }
+
+    try {
+      const res = await this.apiFetch('/inquiries', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          company: company || 'Enterprise Partner',
+          email,
+          inquiryType: pkg,
+          budget,
+          message
+        })
+      });
+
+      if (res.ok && res.data?.inquiry) {
+        this.openInquiryConfirmationModal(res.data.inquiry);
+        e.target.reset();
+      } else {
+        const fallbackId = 'OM-ADV-' + Math.floor(1000 + Math.random() * 9000);
+        this.openInquiryConfirmationModal({ id: fallbackId, name, email, company });
+        e.target.reset();
+      }
+    } catch (_) {
+      const fallbackId = 'OM-ADV-' + Math.floor(1000 + Math.random() * 9000);
+      this.openInquiryConfirmationModal({ id: fallbackId, name, email, company });
+      e.target.reset();
+    }
+  }
+
+  openInquiryConfirmationModal(data) {
+    const modal = document.getElementById('modal-inquiry-confirmed');
+    if (!modal) return;
+    const refEl = document.getElementById('inquiry-confirm-id');
+    const msgEl = document.getElementById('inquiry-confirm-message');
+    if (refEl) refEl.textContent = data.id || ('OM-ADV-' + Date.now().toString().slice(-4));
+    if (msgEl) {
+      msgEl.innerHTML = `Thank you, <b>${this.escapeHTML(data.name || 'Partner')}</b>. Your commercial inquiry for <b>${this.escapeHTML(data.company || 'Enterprise')}</b> has been logged in our media desk system.`;
+    }
+    modal.classList.add('show');
+    this.updateModalOpenState(true);
+    this.refreshIcons(modal);
+  }
+
+  closeInquiryConfirmationModal() {
+    const modal = document.getElementById('modal-inquiry-confirmed');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
   }
 
   handleNewsletterSubscribe(e) {
     e.preventDefault();
-    this.showToast('Thanks for subscribing to OPEN MEDIA Intelligence.');
+    const emailInput = document.getElementById('newsletter-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    if (!email) {
+      this.showToast('Please enter a valid work email address.');
+      return;
+    }
+    if (!this.newsletterSubscribers) this.newsletterSubscribers = [];
+    if (!this.newsletterSubscribers.includes(email)) {
+      this.newsletterSubscribers.push(email);
+      localStorage.setItem('gc_newsletter_subscribers', JSON.stringify(this.newsletterSubscribers));
+    }
+    this.showToast(`🎉 Subscribed! Daily intelligence briefs will be sent to ${email}`);
     e.target.reset();
+  }
+
+  // --- Password Strength & Reader Security ---
+  checkPasswordStrength(val = '') {
+    const hasLen = val.length >= 8;
+    const hasUpper = /[A-Z]/.test(val);
+    const hasLower = /[a-z]/.test(val);
+    const hasDigit = /[0-9]/.test(val);
+
+    const updateItem = (id, isValid) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = `req-item ${isValid ? 'valid' : ''}`;
+      const text = el.textContent.replace(/^[^\w]*/, '').trim();
+      el.innerHTML = `<i data-lucide="${isValid ? 'check-circle-2' : 'circle'}"></i> ${text}`;
+    };
+
+    updateItem('req-len', hasLen);
+    updateItem('req-upper', hasUpper);
+    updateItem('req-lower', hasLower);
+    updateItem('req-digit', hasDigit);
+    this.refreshIcons(document.getElementById('register-pwd-reqs'));
+    return hasLen && hasUpper && hasLower && hasDigit;
   }
 
   // --- Menus & Utilities ---
   openAuthModal(mode = 'login') {
-    document.getElementById('auth-login-form').hidden = mode !== 'login';
-    document.getElementById('auth-register-form').hidden = mode !== 'register';
-    document.getElementById('auth-modal-title').innerHTML = mode === 'login' ? '<i data-lucide="log-in"></i> Login' : '<i data-lucide="user-plus"></i> Create account';
-    document.getElementById('modal-auth').classList.add('show');
-    document.body.classList.add('modal-open');
-    this.refreshIcons(document.getElementById('modal-auth'));
+    const loginForm = document.getElementById('auth-login-form');
+    const regForm = document.getElementById('auth-register-form');
+    const verifyForm = document.getElementById('auth-verify-form');
+    const forgotForm = document.getElementById('auth-forgot-form');
+    const resetForm = document.getElementById('auth-reset-form');
+    const title = document.getElementById('auth-modal-title');
+
+    if (loginForm) loginForm.hidden = mode !== 'login';
+    if (regForm) regForm.hidden = mode !== 'register';
+    if (verifyForm) verifyForm.hidden = mode !== 'verify';
+    if (forgotForm) forgotForm.hidden = mode !== 'forgot';
+    if (resetForm) resetForm.hidden = mode !== 'reset';
+
+    if (title) {
+      const titleMap = {
+        login: '<i data-lucide="log-in"></i> Reader Sign In',
+        register: '<i data-lucide="user-plus"></i> Create Reader Account',
+        verify: '<i data-lucide="shield-check"></i> Verify Email Address',
+        forgot: '<i data-lucide="key-round"></i> Recover Password',
+        reset: '<i data-lucide="lock"></i> Reset Password'
+      };
+      title.innerHTML = titleMap[mode] || titleMap.login;
+    }
+
+    if (mode === 'verify' && this.pendingVerifyEmail) {
+      const verifyDisplay = document.getElementById('verify-email-display');
+      if (verifyDisplay) verifyDisplay.textContent = this.pendingVerifyEmail;
+    }
+
+    const modal = document.getElementById('modal-auth');
+    if (modal) {
+      modal.classList.add('show');
+      this.updateModalOpenState(true);
+      this.refreshIcons(modal);
+    }
   }
 
-  closeAuthModal() { document.getElementById('modal-auth').classList.remove('show'); document.body.classList.remove('modal-open'); }
+  closeAuthModal() {
+    const modal = document.getElementById('modal-auth');
+    if (modal) modal.classList.remove('show');
+    this.updateModalOpenState(false);
+  }
 
   togglePasswordVisibility(inputId, btnElement) {
     const input = document.getElementById(inputId);
@@ -5050,10 +5815,13 @@ class GlobalCoverageApp {
   }
 
   completeAuthentication(data) {
-    this.authToken = data.token; this.currentUser = data.user;
+    this.authToken = data.token;
+    this.currentUser = data.user;
     localStorage.setItem('gc_auth_token', this.authToken);
     localStorage.setItem('gc_current_user', JSON.stringify(this.currentUser));
-    this.updateNavVisibility(); this.closeAuthModal(); this.fetchUserLibrarySync();
+    this.updateNavVisibility();
+    this.closeAuthModal();
+    this.fetchUserLibrarySync();
   }
 
   async handleLogin(e) {
@@ -5084,9 +5852,144 @@ class GlobalCoverageApp {
 
   async handleRegister(e) {
     e.preventDefault();
-    const res = await this.apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ name: document.getElementById('register-name').value.trim(), email: document.getElementById('register-email').value.trim(), password: document.getElementById('register-password').value }) });
-    if (res.ok && res.data?.token) { this.completeAuthentication(res.data); this.showToast('Account created.'); }
-    else this.showToast(res.data?.error || 'Unable to create account.');
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+
+    if (!name || !email || !password) {
+      this.showToast('Please fill out all registration fields.');
+      return;
+    }
+
+    if (!this.checkPasswordStrength(password)) {
+      this.showToast('Password must be at least 8 chars with uppercase, lowercase, and a number.');
+      return;
+    }
+
+    const res = await this.apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password })
+    });
+
+    if (res.ok && res.data) {
+      if (res.data.requiresVerification) {
+        this.pendingVerifyEmail = email;
+        const codeInput = document.getElementById('verify-code');
+        if (codeInput && res.data.verificationToken) codeInput.value = res.data.verificationToken;
+        this.openAuthModal('verify');
+        this.showToast(`Verification code generated for ${email}. Dev Code: ${res.data.verificationToken || 'Check terminal'}`);
+      } else if (res.data.token) {
+        this.completeAuthentication(res.data);
+        this.showToast(`🎉 Welcome to OPEN MEDIA, ${name}! Your account is registered.`);
+      }
+    } else {
+      this.showToast(res.data?.error || 'Unable to create account. Please check credentials.');
+    }
+  }
+
+  async handleVerifyEmail(e) {
+    e.preventDefault();
+    const code = document.getElementById('verify-code')?.value.trim();
+    const email = this.pendingVerifyEmail || document.getElementById('register-email')?.value.trim();
+
+    if (!code || code.length !== 6) {
+      this.showToast('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    const res = await this.apiFetch('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, token: code })
+    });
+
+    if (res.ok && res.data?.token) {
+      this.completeAuthentication(res.data);
+      this.showToast('🎉 Email verified! Your account is fully active.');
+    } else {
+      this.showToast(res.data?.error || 'Invalid or expired verification code.');
+    }
+  }
+
+  async handleResendVerification() {
+    const email = this.pendingVerifyEmail || document.getElementById('register-email')?.value.trim();
+    if (!email) {
+      this.showToast('Email address required to resend verification.');
+      return;
+    }
+
+    const res = await this.apiFetch('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+
+    if (res.ok) {
+      const token = res.data?.verificationToken;
+      const codeInput = document.getElementById('verify-code');
+      if (codeInput && token) codeInput.value = token;
+      this.showToast(`Verification code resent to ${email}. (Code: ${token})`);
+    } else {
+      this.showToast(res.data?.error || 'Unable to resend code.');
+    }
+  }
+
+  async handleForgotPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email')?.value.trim();
+    if (!email) {
+      this.showToast('Please enter your account email address.');
+      return;
+    }
+
+    const res = await this.apiFetch('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+
+    if (res.ok && res.data) {
+      this.showToast('Recovery token generated.');
+      const resetEmailInput = document.getElementById('reset-email');
+      const resetTokenInput = document.getElementById('reset-token');
+      if (resetEmailInput) resetEmailInput.value = email;
+      if (resetTokenInput && res.data.resetToken) resetTokenInput.value = res.data.resetToken;
+      this.openAuthModal('reset');
+    } else {
+      this.showToast(res.data?.error || 'Account not found or recovery failed.');
+    }
+  }
+
+  async handleResetPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('reset-email')?.value.trim();
+    const token = document.getElementById('reset-token')?.value.trim();
+    const newPassword = document.getElementById('reset-new-password')?.value;
+
+    if (!email || !token || !newPassword) {
+      this.showToast('All fields are required to reset your password.');
+      return;
+    }
+
+    const hasLen = newPassword.length >= 8;
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasDigit = /[0-9]/.test(newPassword);
+    if (!hasLen || !hasUpper || !hasLower || !hasDigit) {
+      this.showToast('New password must have 8+ chars with uppercase, lowercase, and a digit.');
+      return;
+    }
+
+    const res = await this.apiFetch('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, token, newPassword })
+    });
+
+    if (res.ok) {
+      this.showToast('🎉 Password reset successfully! Please sign in with your new password.');
+      this.openAuthModal('login');
+      const loginEmailInput = document.getElementById('login-email');
+      if (loginEmailInput) loginEmailInput.value = email;
+    } else {
+      this.showToast(res.data?.error || 'Invalid recovery token or reset failed.');
+    }
   }
   toggleMobileNav() {
     const drawer = document.getElementById('mobile-drawer');

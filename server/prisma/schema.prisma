@@ -19,6 +19,10 @@ model User {
   bio             String?
   avatarUrl       String?
   followedTopics  String?        @default("[]") // JSON string array of topics/categories
+  emailVerified   Boolean        @default(true)
+  verificationToken String?
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
   createdAt       DateTime       @default(now())
 
   articles            Article[]            @relation("AuthorArticles")
@@ -48,6 +52,10 @@ model Article {
   image             String?
   category          String
   domain            String?
+  contentType       String         @default("NEWS") // NEWS | ANALYSIS | COMMUNITY | SPONSORED
+  sourceName        String?
+  sourceUrl         String?
+  straightBrief     String?        // Crisp ~50-word straight facts briefing
   status            String         @default("PENDING") // DRAFT | PENDING | PUBLISHED | REJECTED | CHANGES_REQUESTED | TAKEN_DOWN
   editorialFeedback String?
   authorId          String
@@ -275,4 +283,39 @@ model NotificationSetting {
   topicUpdates      Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+// -------------------------------------------------------------
+// Enterprise Journeys: Audit Log & Business Inquiries
+// -------------------------------------------------------------
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String   // USER_CREATED | USER_DELETED | ARTICLE_APPROVED | ARTICLE_REJECTED | ARTICLE_FEEDBACK | ARTICLE_CREATED | ARTICLE_RESUBMITTED
+  actorId    String?
+  actorEmail String?
+  actorRole  String?
+  targetId   String?
+  targetType String?  // USER | ARTICLE | COMMENT | DISCUSSION
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model BusinessInquiry {
+  id          String   @id @default(uuid())
+  name        String
+  email       String
+  company     String
+  inquiryType String   // DISPLAY_ADS | SPONSORED_CONTENT | EVENT_PARTNERSHIP | SYNDICATION | OTHER
+  budget      String?
+  message     String
+  status      String   @default("NEW") // NEW | IN_REVIEW | CONTACTED | CLOSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
 }

@@ -36,6 +36,38 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
+export const verifyEmailSchema = z.object({
+  email: z.string().trim().email('Invalid email address'),
+  code: z.string().trim().min(4, 'Verification code is required').optional(),
+  token: z.string().trim().min(4, 'Verification code is required').optional()
+}).refine(data => Boolean(data.code || data.token), {
+  message: 'Verification code is required',
+  path: ['code']
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().trim().email('Invalid email address')
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email('Invalid email address')
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().email('Invalid email address'),
+  token: z.string().trim().min(6, 'Reset token is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters')
+});
+
+export const createInquirySchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+  email: z.string().trim().email('Valid business email is required'),
+  company: z.string().trim().min(1, 'Company or organization name is required'),
+  inquiryType: z.string().trim().min(1, 'Inquiry type is required'),
+  budget: z.string().trim().optional(),
+  message: z.string().trim().min(5, 'Message must be at least 5 characters')
+});
+
 // --- Admin Schemas ---
 export const createUserSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),

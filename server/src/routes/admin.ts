@@ -11,6 +11,7 @@ import {
   editArticleSchema
 } from '../middleware/validation.js';
 import { emitRealtime } from '../realtime.js';
+import { recordAudit } from '../services/auditService.js';
 
 export const adminRouter = Router();
 
@@ -27,6 +28,28 @@ const generateSecurePassword = (): string => {
 
 // All admin routes require ADMIN role
 adminRouter.use(requireRole(['ADMIN']));
+
+// GET /api/admin/audit-logs (Admin: review comprehensive audit trail)
+adminRouter.get('/audit-logs', async (req: Request, res: Response) => {
+  try {
+    const { action, limit = '100' } = req.query;
+    const where: any = {};
+    if (action && typeof action === 'string') {
+      where.action = action;
+    }
+
+    const logs = await prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(parseInt(limit as string, 10) || 100, 200)
+    });
+
+    return res.json({ success: true, logs, auditLogs: logs });
+  } catch (err: any) {
+    console.error('Admin audit logs error:', err);
+    return res.status(500).json({ error: 'Failed to fetch audit logs' });
+  }
+});
 
 adminRouter.get('/events', async (req: Request, res: Response) => {
   try {
@@ -159,6 +182,16 @@ adminRouter.post('/users/create', requireRootAdmin, validateBody(createUserSchem
       }
     });
 
+    await recordAudit({
+      action: 'USER_CREATED',
+      actorId: req.user!.id,
+      actorEmail: req.user!.email,
+      actorRole: req.user!.role,
+      targetId: newUser.id,
+      targetType: 'USER',
+      details: `Created ${role} account for ${newUser.email}`
+    });
+
     return res.status(201).json({
       message: `${role} account created successfully`,
       user: newUser,
@@ -207,6 +240,16 @@ adminRouter.delete('/users/:id', requireRootAdmin, async (req: Request, res: Res
       prisma.user.delete({ where: { id } })
     ]);
 
+    await recordAudit({
+      action: 'USER_DELETED',
+      actorId: req.user!.id,
+      actorEmail: req.user!.email,
+      actorRole: req.user!.role,
+      targetId: id,
+      targetType: 'USER',
+      details: `Deleted user ${user.email} (${user.role})`
+    });
+
     return res.json({
       message: `User ${user.email} successfully removed from platform`,
       deletedUserId: id
@@ -250,6 +293,16 @@ adminRouter.patch('/articles/:id/status', validateBody(updateStatusSchema), asyn
       status: updated.status,
       title: updated.title,
       article: updated
+    });
+
+    await recordAudit({
+      action: `ARTICLE_STATUS_${status}`,
+      actorId: req.user!.id,
+      actorEmail: req.user!.email,
+      actorRole: req.user!.role,
+      targetId: updated.id,
+      targetType: 'ARTICLE',
+      details: `Article "${updated.title}" status changed to ${status}${editorialFeedback ? `. Feedback: ${editorialFeedback}` : ''}`
     });
 
     return res.json({

@@ -18,6 +18,7 @@ import { newsRouter, generateRSSXML } from './routes/news.js';
 import { discussionsRouter } from './routes/discussions.js';
 import { pollsRouter } from './routes/polls.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { inquiriesRouter } from './routes/inquiries.js';
 import { startRSSAutomation } from './services/rssService.js';
 
 import { setSocketIO, emitRealtime } from './realtime.js';
@@ -86,7 +87,8 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(authenticateToken);
 
 // Health check
@@ -111,6 +113,7 @@ app.use('/api/news', newsRouter);
 app.use('/api/discussions', discussionsRouter);
 app.use('/api/polls', pollsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/inquiries', inquiriesRouter);
 
 // Public RSS Feed (XML) for external aggregators (all tabs or specific tab)
 app.get(['/rss.xml', '/api/rss', '/rss/:category.xml'], async (req, res) => {
